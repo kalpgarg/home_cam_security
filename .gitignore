@@ -9,8 +9,10 @@ build/
 dist/
 
 results/
+test*/
 *.xlsx
 *.spec
+cam_info.json
 
 # Compiled Java class files
 *.class

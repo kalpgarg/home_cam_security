@@ -1,0 +1,15 @@
+{
+  "CP_PLUS_DVR": {
+    "rtsp_cred": {
+      "UserName": "admin",
+      "Password": "love@123",
+      "IP": "192.168.1.2",
+      "port_number": "554",
+      "__comment__": "Credentials for rtsp stream"
+    },
+    "resolution": {
+      "Width": 960,
+      "Height": 1080
+    }
+  }
+}
