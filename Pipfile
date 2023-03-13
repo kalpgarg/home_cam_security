@@ -7,6 +7,9 @@ name = "pypi"
 opencv-python = "*"
 pytz = "*"
 deepface = "*"
+mediapipe = "*"
+cvzone = "*"
+cmake = "*"
 
 [dev-packages]
 

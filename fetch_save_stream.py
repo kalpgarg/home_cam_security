@@ -11,7 +11,6 @@ import time
 from datetime import datetime, timezone
 import pytz
 import cv2
-import numpy as np
 from py_logging import get_logger
 
 global logger
@@ -51,12 +50,10 @@ def parse_cam_info_json_file(file_location):
 class FetchStream(object):
 
     def __init__(self, u_name, u_passwd, IP, port_no, cam_width, cam_height):
-
         self.rtsp = "rtsp://{}:{}@{}:{}/cam/realmonitor?".format(u_name, u_passwd, IP, port_no)
         self.width = int(cam_width)
         self.height = int(cam_height)
         self.fps = int(30)  #default value
-        self.main_screen = np.zeros(((self.height), (self.width), 3), dtype=np.uint8)
 
     def connect_camera(self, ch, subtype=0):
         ch_substr = "channel={}&subtype={}".format(ch, subtype)
@@ -71,26 +68,7 @@ class FetchStream(object):
         self.height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
         return cam
 
-    def join_cams(self, cams):
-        if len(cams) > 4:
-            logger.info("Maximum cameras supported is 4 as of now. Exiting.. ")
-            return 0
-        for i, cam in enumerate(cams):
-            if i == 0:
-                success, current_screen = cams[i].read()
-                self.main_screen[:self.height, :self.width, :3] = current_screen
-            if i == 1:
-                success, current_screen = cams[i].read()
-                self.main_screen[self.height:(self.height * 2), :self.width, :3] = current_screen
-            if i == 2:
-                success, current_screen = cams[i].read()
-                self.main_screen[:self.height, self.width:self.width * 2, :3] = current_screen
-            if i == 3:
-                success, current_screen = cams[i].read()
-                self.main_screen[self.height:self.height * 2, self.width:self.width * 2, :3] = current_screen
-        return (success)
-
-    def display_save_live_stream(self, cams, log_folder, period, save_stream=False):
+    def display_save_live_stream(self, cams, log_folder, period, cam_no, save_stream=False):
         pTime = 0
         start_time = time.time()
         start_dt = return_datetime()
@@ -98,31 +76,31 @@ class FetchStream(object):
         video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
 
         if save_stream:
-            path_exists = os.path.exists(os.path.join(log_folder, "recordings"))
+            path_exists = os.path.exists(os.path.join(log_folder, "recordings", "cam{}".format(cam_no)))
             if not path_exists:
-                os.makedirs(os.path.join(log_folder, "recordings"))
-            recordings_dir = os.path.join(log_folder, "recordings")
-
-        # Create a video write before entering the loop
-        first_v_file = os.path.join(recordings_dir, "{}".format(start_dt)+ ".avi")
-        video_writer = cv2.VideoWriter(
-            first_v_file, video_codec, self.fps, (self.width, self.height))
+                os.makedirs(os.path.join(log_folder, "recordings", "cam{}".format(cam_no)))
+            recordings_dir = os.path.join(log_folder, "recordings", "cam{}".format(cam_no))
+            logger.info("Recodings dir : {}".format(recordings_dir))
+            # Create a video write before entering the loop
+            first_v_file = os.path.join(recordings_dir, "{}".format(start_dt)+ ".mp4")
+            video_writer = cv2.VideoWriter(
+                first_v_file, video_codec, self.fps, (self.width, self.height))
 
         while True:
-            success = self.join_cams(cams)
-            frame = self.main_screen
+            success, current_screen = cams.read()
+            frame = current_screen
             # Full_frame = cv2.resize(self.main_screen, dim, interpolation=cv2.INTER_AREA)
             cTime = time.time()
             fps = 1 / (cTime - pTime)
             pTime = cTime
             cv2.putText(frame, 'FPS: {}'.format(int(fps)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 2)
-            cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             cv2.imshow("CP_PLUS", frame)
             if save_stream:
                 if time.time() - start_time > period:
                     logger.info("Saving stream")
                     end_dt = return_datetime()
-                    video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".avi")
+                    video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
                     video_writer = cv2.VideoWriter(video_file, video_codec, self.fps, (self.width, self.height))
                     start_time = time.time()
                     start_dt = end_dt
@@ -131,23 +109,10 @@ class FetchStream(object):
                 else:
                     logger.info("Unable to read from stream.")
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                for cam in cams:
-                    cam.release()
+                cams.release()
                 video_writer.release()
                 cv2.destroyAllWindows()
                 break
-
-    def save_stream(self, log_folder, period):
-        path_exists = os.path.exists(os.path.join(log_folder, "recordings"))
-        if not path_exists :
-            os.makedirs(os.path.join(log_folder, "recordings"))
-        recordings_dir = os.path.join(log_folder, "recordings")
-
-        curr_dt = return_datetime()
-        curr_time = time.time()
-
-
-
 
 if __name__ == '__main__':
     cam_stream_args = argparse.ArgumentParser(description="Create and save Camera stream")
@@ -172,6 +137,5 @@ if __name__ == '__main__':
 
     cam_object = FetchStream(u_name, pass_w, IP, port_no, cam_wid, cam_hei)
     cam_no = args.camera_no
-    cams = []
-    cams.append(cam_object.connect_camera(cam_no))
-    cam_object.display_save_live_stream(cams, args.log_folder, args.time_period, save_stream=True)
+    cams = cam_object.connect_camera(cam_no)
+    cam_object.display_save_live_stream(cams, args.log_folder, args.time_period, args.camera_no, save_stream=True)

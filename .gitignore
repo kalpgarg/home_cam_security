@@ -9,6 +9,7 @@ build/
 dist/
 
 results/
+input/
 test*/
 *.xlsx
 *.spec
