@@ -14,6 +14,7 @@ test*/
 *.xlsx
 *.spec
 cam_info.json
+cp_plus_cam_info.json
 
 # Compiled Java class files
 *.class

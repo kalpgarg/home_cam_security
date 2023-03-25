@@ -18,6 +18,7 @@ from cvzone.SelfiSegmentationModule import SelfiSegmentation
 import numpy as np
 from deepface import DeepFace
 from py_logging import get_logger
+import albumentations as alb
 
 global logger
 
@@ -80,13 +81,12 @@ class FaceDetect(object):
     def create_train_test_val_split(self):
         data_dir_path = self.input_db_path + "kalp"
         total_files = len(os.listdir(data_dir_path))
-        print(os.listdir(data_dir_path), total_files)
+        # print(os.listdir(data_dir_path), total_files)
         total_training_sample = int(0.7*total_files)
         total_test_sample = int(0.16*total_files)
         total_val_sample = int(0.14*total_files)
 
         logger.info("Total \n training sample: {} \n test_sample: {} \n validation_sample: {}".format(total_training_sample, total_test_sample, total_val_sample))
-        # training_sample
         # self.segregrate_data(data_type="train", total_data_sample=total_training_sample)
         # self.segregrate_data(data_type="test", total_data_sample=total_test_sample)
         # self.segregrate_data(data_type="val", total_data_sample=total_val_sample)
@@ -111,7 +111,6 @@ class FaceDetect(object):
             existing_fpath = os.path.join(data_dir_path, data_files[rand_int])
             new_fpath = os.path.join(self.input_db_path, data_type, "data", data_files[rand_int])
             os.replace(existing_fpath, new_fpath)
-            # shutil.copyfile(existing_fpath, new_fpath)
 
             #put correspondning label into label dir
             f_name = data_files[rand_int].split('.')[0] + '.json'
@@ -121,6 +120,7 @@ class FaceDetect(object):
                 os.replace(existing_fpath, new_fpath)
                 # shutil.copyfile(existing_fpath, new_fpath)
 
+    
     def load_image(self, x):
         byte_img = tf.io.read_file(x)
         img = tf.io.decode_jpeg(byte_img)

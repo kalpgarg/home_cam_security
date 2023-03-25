@@ -10,6 +10,7 @@ deepface = "*"
 mediapipe = "*"
 cvzone = "*"
 cmake = "*"
+albumentations = "*"
 
 [dev-packages]
 
