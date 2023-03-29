@@ -72,8 +72,8 @@ class FetchStream(object):
         pTime = 0
         start_time = time.time()
         start_dt = return_datetime()
-        # video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
-        video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
+        video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
+        # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
 
         if save_stream:
             path_exists = os.path.exists(os.path.join(log_folder, "recordings", "cam{}".format(cam_no)))
@@ -95,7 +95,7 @@ class FetchStream(object):
             pTime = cTime
             cv2.putText(frame, 'FPS: {}'.format(int(fps)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 2)
             # cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            cv2.imshow("CP_PLUS", frame)
+            # cv2.imshow("CP_PLUS", frame)
             if save_stream:
                 if time.time() - start_time > period:
                     logger.info("Saving stream")
