@@ -11,6 +11,7 @@ mediapipe = "*"
 cvzone = "*"
 cmake = "*"
 albumentations = "*"
+keras = "*"
 
 [dev-packages]
 
