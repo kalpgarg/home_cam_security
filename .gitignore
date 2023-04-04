@@ -16,6 +16,7 @@ test*/
 *.spec
 cam_info.json
 cp_plus_cam_info.json
+.vscode/
 
 # Compiled Java class files
 *.class

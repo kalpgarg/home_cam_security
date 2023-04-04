@@ -1,6 +1,6 @@
 """
  *  @file  capture_face.py
- *  @brief Captures the face from webcam input and create a corresponding folder.
+ *  @brief Captures the face from webcam input and put them into a corresponding folder.
  *
  *  @author Kalp Garg.
 """
@@ -57,7 +57,7 @@ class CaptureFace(object):
                 logger.error("Total capture cnt can't be zero. PLS CHECK... ")
                 return 0
             sleep_time = round((total_time/total_capture_cnt),2)
-        dir_path = self.create_dir(log_folder, name)
+        dir_path = self.create_dir(log_folder, "raw_untouched_data")
         logger.info("Directory path : {}".format(dir_path))
         segmentor = SelfiSegmentation()
         logger.info("Time between capture is : {} s".format(sleep_time))
