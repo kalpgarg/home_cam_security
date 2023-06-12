@@ -242,20 +242,21 @@ class FaceTrain(object):
                 len(val_labels)
             ))
         
-        train = tf.data.Dataset.zip((train_images, train_labels))
-        train = train.shuffle(5000)
-        train = train.batch(8)
-        train = train.prefetch(4)
+        self.train = tf.data.Dataset.zip((train_images, train_labels))
+        self.train = self.train.shuffle(5000)
+        self.train = self.train.batch(8)
+        self.train = self.train.prefetch(4)
 
         self.test = tf.data.Dataset.zip((test_images, test_labels))
         self.test = self.test.shuffle(1300)
         self.test = self.test.batch(8)
         self.test = self.test.prefetch(4)
 
-        val = tf.data.Dataset.zip((val_images, val_labels))
-        val = val.shuffle(1000)
-        val = val.batch(8)
-        val = val.prefetch(4)
+        self.val = tf.data.Dataset.zip((val_images, val_labels))
+        self.val = self.val.shuffle(1000)
+        self.val = self.val.batch(8)
+        self.val = self.val.prefetch(4)
+        #todo - define these inside init call
 
                 # for i in range(10):
         #     res = train.as_numpy_iterator().next()
@@ -281,12 +282,12 @@ class FaceTrain(object):
         facetracker = self.build_model()
 
         # facetracker.summary()
-        X, y = train.as_numpy_iterator().next()
+        X, y = self.train.as_numpy_iterator().next()
         print(X.shape)
         classes, coords = facetracker.predict(X)
         print(classes, coords)
 
-        batches_per_epoch = len(train)
+        batches_per_epoch = len(self.train)
         lr_decay = (1. / 0.75 - 1) / batches_per_epoch
         opt = tf.keras.optimizers.legacy.Adam(learning_rate=0.0001, decay=lr_decay)
 
@@ -302,7 +303,7 @@ class FaceTrain(object):
 
         logdir = 'logs'
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
-        hist = model.fit(train, epochs=10, validation_data=val, callbacks=[tensorboard_callback])
+        hist = model.fit(self.train, epochs=10, validation_data=self.val, callbacks=[tensorboard_callback])
 
         print(hist.history)
         facetracker.save('facetracker_new.h5')
