@@ -94,7 +94,8 @@ class FaceTrain(object):
         if albumentation_needed:
             self.do_albumentation()
 
-        self.merge_images_labels()
+        self.merge_images_and_labels()
+        self.train_model()
 
 
     def create_train_test_val_split(self):
@@ -204,7 +205,7 @@ class FaceTrain(object):
                 except Exception as e:
                     print(e)
 
-    def merge_images_labels(self):  
+    def merge_images_and_labels(self):  
         train_images = tf.data.Dataset.list_files(
             os.path.join(self.input_db_path, 'aug_data', 'train', 'images', "*.jpg"), shuffle=False)
         train_images = train_images.map(self.load_image)
@@ -247,49 +248,16 @@ class FaceTrain(object):
         train = train.prefetch(4)
 
         self.test = tf.data.Dataset.zip((test_images, test_labels))
-        self.test = self.test1.shuffle(1300)
-        self.test = self.test1.batch(8)
-        self.test = self.test1.prefetch(4)
+        self.test = self.test.shuffle(1300)
+        self.test = self.test.batch(8)
+        self.test = self.test.prefetch(4)
 
         val = tf.data.Dataset.zip((val_images, val_labels))
         val = val.shuffle(1000)
         val = val.batch(8)
         val = val.prefetch(4)
 
-class FaceDetect(object):
-    def __init__(self, in_folder):
-        self.in_dir = in_folder
-        # self.input_db_path = "/Users/kgarg/Documents/extras/home_cam_security/input/input_db/"
-        self.input_db_path = in_folder
-        self.parse_in_dir()
-
-    def parse_in_dir(self):
-        if not os.path.exists(self.in_dir):
-            logger.error("Given path {} doesn't exist. Please check.. ".format(self.in_dir))
-            return 0
-        total_files = len(os.listdir(self.in_dir))
-        return os.listdir(self.in_dir)
-
-    def video_processing_pipeline(self):
-        current_dir = self.parse_in_dir()
-        i_time = time.time()
-        for id, video in enumerate(current_dir):
-            video_path = os.path.join(self.in_dir, video)
-            logger.info("Processing video : {}".format(video))
-            i_time = time.time()
-            self.face_detect_and_identify(video_path)
-            logger.info("Time to process : {}".format(time.time() - i_time))
-
-    def limit_gpu_growth(self):
-        gpus = tf.config.experimental.list_physical_devices('GPU')
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        logger.info("GPU: {}".format(tf.config.list_physical_devices('GPU')))
-
-    def load_images(self):
-        self.limit_gpu_growth()
-
-        # for i in range(10):
+                # for i in range(10):
         #     res = train.as_numpy_iterator().next()
         #     # res = data_samples.next()
             
@@ -306,6 +274,9 @@ class FaceDetect(object):
         #         ax[idx].imshow(sample_image)
         #     fig.savefig("{}iiiiiii.jpg".format(i))
             # plt.show()
+
+    def train_model(self):
+        self.limit_gpu_growth()
 
         facetracker = self.build_model()
 
@@ -355,11 +326,17 @@ class FaceDetect(object):
 
         plt.show()
 
+    def limit_gpu_growth(self):
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logger.info("GPU: {}".format(tf.config.list_physical_devices('GPU')))
+
     def test_model(self):
         facetracker = load_model('facetracker_new.h5')
 
         for i in range(20):
-            test_data = self.test1.as_numpy_iterator()
+            test_data = self.test.as_numpy_iterator()
             test_sample = test_data.next()
             # print(test_sample)
             yhat = facetracker.predict(test_sample[0])
@@ -420,6 +397,31 @@ class FaceDetect(object):
         byte_img = tf.io.read_file(x)
         img = tf.io.decode_jpeg(byte_img)
         return img
+
+
+class FaceDetect(object):
+    def __init__(self, in_folder):
+        self.in_dir = in_folder
+        # self.input_db_path = "/Users/kgarg/Documents/extras/home_cam_security/input/input_db/"
+        self.input_db_path = in_folder
+        self.parse_in_dir()
+
+    def parse_in_dir(self):
+        if not os.path.exists(self.in_dir):
+            logger.error("Given path {} doesn't exist. Please check.. ".format(self.in_dir))
+            return 0
+        total_files = len(os.listdir(self.in_dir))
+        return os.listdir(self.in_dir)
+
+    def video_processing_pipeline(self):
+        current_dir = self.parse_in_dir()
+        i_time = time.time()
+        for id, video in enumerate(current_dir):
+            video_path = os.path.join(self.in_dir, video)
+            logger.info("Processing video : {}".format(video))
+            i_time = time.time()
+            self.face_detect_and_identify(video_path)
+            logger.info("Time to process : {}".format(time.time() - i_time))
 
     def face_detect_and_identify(self, v_path):
         cap = cv2.VideoCapture(v_path)
