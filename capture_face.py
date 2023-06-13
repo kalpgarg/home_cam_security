@@ -11,7 +11,7 @@ import cv2
 import argparse
 from py_logging import get_logger
 from datetime import datetime
-from cvzone.SelfiSegmentationModule import SelfiSegmentation
+# from cvzone.SelfiSegmentationModule import SelfiSegmentation
 import pytz
 import uuid
 
@@ -59,7 +59,7 @@ class CaptureFace(object):
             sleep_time = round((total_time/total_capture_cnt),2)
         dir_path = self.create_dir(log_folder, "raw_untouched_data")
         logger.info("Directory path : {}".format(dir_path))
-        segmentor = SelfiSegmentation()
+        # segmentor = SelfiSegmentation()
         logger.info("Time between capture is : {} s".format(sleep_time))
         for i in range(total_capture_cnt):
             if cam.isOpened():
@@ -69,7 +69,7 @@ class CaptureFace(object):
                 else:
                     time.sleep(sleep_time)
                 success, img = cam.read()
-                start_time = time.time()
+                # start_time = time.time()
                 if success:
                     # bg_rem_img = segmentor.removeBG(img, (255, 255, 255), threshold=0.1)
                     cv2.imshow("original", img)

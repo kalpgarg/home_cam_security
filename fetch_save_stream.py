@@ -101,6 +101,7 @@ class FetchStream(object):
                     logger.info("Saving stream")
                     end_dt = return_datetime()
                     video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
+                    logger.info('FPS: {}'.format(int(fps)))
                     video_writer = cv2.VideoWriter(video_file, video_codec, self.fps, (self.width, self.height))
                     start_time = time.time()
                     start_dt = end_dt
