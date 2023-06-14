@@ -54,23 +54,17 @@ class FaceTracker(Model):
 
         with tf.GradientTape() as tape:
             classes, coords = self.model(X, training=True)
-
             batch_classloss = self.closs(y[0], classes)
             batch_localizationloss = self.lloss(tf.cast(y[1], tf.float32), coords)
-
             total_loss = batch_localizationloss + 0.5 * batch_classloss
-
             grad = tape.gradient(total_loss, self.model.trainable_variables)
-
         self.opt.apply_gradients(zip(grad, self.model.trainable_variables))
 
         return {"total_loss": total_loss, "class_loss": batch_classloss, "regress_loss": batch_localizationloss}
 
     def test_step(self, batch, **kwargs):
         X, y = batch
-
         classes, coords = self.model(X, training=False)
-
         batch_classloss = self.closs(y[0], classes)
         batch_localizationloss = self.lloss(tf.cast(y[1], tf.float32), coords)
         total_loss = batch_localizationloss + 0.5 * batch_classloss
@@ -81,8 +75,9 @@ class FaceTracker(Model):
         return self.model(X, **kwargs)
 
 
+
 class FaceTrain(object):
-    def __init__(self, data_folder, data_splitting_needed=False, albumentation_needed=False) -> None:
+    def __init__(self, data_folder=None, data_splitting_needed=False, albumentation_needed=False) -> None:
         if not os.path.exists(data_folder):
             logger.error("Given path {} doesn't exist. Please check.. ".format(self.in_dir))
             return 0
@@ -94,8 +89,8 @@ class FaceTrain(object):
         if albumentation_needed:
             self.do_albumentation()
 
-        self.merge_images_and_labels()
-        self.train_model()
+        # self.merge_images_and_labels()
+        # self.train_model()
 
 
     def create_train_test_val_split(self):
@@ -209,19 +204,19 @@ class FaceTrain(object):
         train_images = tf.data.Dataset.list_files(
             os.path.join(self.input_db_path, 'aug_data', 'train', 'images', "*.jpg"), shuffle=False)
         train_images = train_images.map(self.load_image)
-        train_images = train_images.map(lambda x: tf.image.resize(x, (500, 500)))
+        train_images = train_images.map(lambda x: tf.image.resize(x, (224, 224), method=tf.image.ResizeMethod.BICUBIC))
         train_images = train_images.map(lambda x: x / 255)
 
         test_images = tf.data.Dataset.list_files(
             os.path.join(self.input_db_path, 'aug_data', 'test', 'images', '*.jpg'), shuffle=False)
         test_images = test_images.map(self.load_image)
-        test_images = test_images.map(lambda x: tf.image.resize(x, (500, 500)))
+        test_images = test_images.map(lambda x: tf.image.resize(x, (224, 224), method=tf.image.ResizeMethod.BICUBIC))
         test_images = test_images.map(lambda x: x / 255)
 
         val_images = tf.data.Dataset.list_files(os.path.join(self.input_db_path, 'aug_data', 'val', 'images', '*.jpg'),
                                                 shuffle=False)
         val_images = val_images.map(self.load_image)
-        val_images = val_images.map(lambda x: tf.image.resize(x, (500, 500)))
+        val_images = val_images.map(lambda x: tf.image.resize(x, (224, 224), method=tf.image.ResizeMethod.BICUBIC))
         val_images = val_images.map(lambda x: x / 255)
 
         train_labels = tf.data.Dataset.list_files(
@@ -277,15 +272,15 @@ class FaceTrain(object):
             # plt.show()
 
     def train_model(self):
-        self.limit_gpu_growth()
+        # self.limit_gpu_growth()
 
         facetracker = self.build_model()
 
         # facetracker.summary()
         X, y = self.train.as_numpy_iterator().next()
-        print(X.shape)
-        classes, coords = facetracker.predict(X)
-        print(classes, coords)
+        # print(X.shape)
+        # classes, coords = facetracker.predict(X)
+        # print(classes, coords)
 
         batches_per_epoch = len(self.train)
         lr_decay = (1. / 0.75 - 1) / batches_per_epoch
@@ -294,19 +289,23 @@ class FaceTrain(object):
         classloss = tf.keras.losses.BinaryCrossentropy()
         regressloss = self.localization_loss
 
-        print(self.localization_loss(y[1], coords))
-        print(classloss(y[0], classes))
-        print(regressloss(y[1], coords))
+        # print(self.localization_loss(y[1], coords))
+        # print(classloss(y[0], classes))
+        # print(regressloss(y[1], coords))
 
         model = FaceTracker(facetracker)
         model.compile(opt, classloss, regressloss)
 
         logdir = 'logs'
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
-        hist = model.fit(self.train, epochs=10, validation_data=self.val, callbacks=[tensorboard_callback])
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor="val_total_loss", patience=5)
+        hist = model.fit(self.train, epochs=50, validation_data=self.val, callbacks=[tensorboard_callback, early_stopping])
 
-        print(hist.history)
-        facetracker.save('facetracker_new.h5')
+        test_losses = model.evaluate(self.test)
+        print(test_losses)
+        # print(hist.history)
+        facetracker.save('facetracker_14_june_v2.h5')
+
 
         fig, ax = plt.subplots(ncols=3, figsize=(20, 5))
 
@@ -334,7 +333,7 @@ class FaceTrain(object):
         logger.info("GPU: {}".format(tf.config.list_physical_devices('GPU')))
 
     def test_model(self):
-        facetracker = load_model('facetracker_new.h5')
+        facetracker = load_model('facetracker_14_june_v2.h5')
 
         for i in range(20):
             test_data = self.test.as_numpy_iterator()
@@ -342,15 +341,15 @@ class FaceTrain(object):
             # print(test_sample)
             yhat = facetracker.predict(test_sample[0])
 
-            fig, ax = plt.subplots(ncols=4, figsize=(20, 20))
+            fig, ax = plt.subplots(ncols=4, figsize=(20,20))
             for idx in range(4):
                 sample_image = test_sample[0][idx]
                 sample_coords = yhat[1][idx]
 
                 if yhat[0][idx] > 0.9:
                     cv2.rectangle(sample_image,
-                                  tuple(np.multiply(sample_coords[:2], [500, 500]).astype(int)),
-                                  tuple(np.multiply(sample_coords[2:], [500, 500]).astype(int)),
+                                  tuple(np.multiply(sample_coords[:2], [224, 224]).astype(int)),
+                                  tuple(np.multiply(sample_coords[2:], [224, 224]).astype(int)),
                                   (255, 0, 0), 2)
 
                 ax[idx].imshow(sample_image)
@@ -370,7 +369,7 @@ class FaceTrain(object):
         return delta_coord + delta_size
 
     def build_model(self):
-        input_layer = Input(shape=(500, 500, 3))
+        input_layer = Input(shape=(224, 224, 3))
 
         vgg = VGG16(include_top=False)(input_layer)
 
@@ -465,7 +464,7 @@ if __name__ == "__main__":
                                   help="Location of the input folder which has saved face captures")
 
     parser_test_model = subparser.add_parser(func_list[1], help="Test the model. Requires folder location which contains streams.")
-    parser_train_model.add_argument('-il', '--input_log_folder', type=str, metavar='input_log_folder', required=True,
+    parser_train_model.add_argument('-il', '--input_log_folder', type=str, metavar='input_log_folder',
                                   help="Location of the input folder which has saved streams")
 
     args = face_detect_args.parse_args()
@@ -482,8 +481,10 @@ if __name__ == "__main__":
         # test model
         pass
 
-    face_detect = FaceDetect(in_folder=args.input_log_folder)
+    face_detect = FaceTrain(data_folder=args.input_data_folder)
     # face_detect.video_processing_pipeline()
-    face_detect.load_images()
+    # face_detect.load_images()
     # face_detect.create_train_test_val_split()
+    face_detect.merge_images_and_labels()
+    # face_detect.train_model()
     face_detect.test_model()

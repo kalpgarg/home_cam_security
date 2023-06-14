@@ -9,6 +9,7 @@ import time
 
 import cv2
 import argparse
+
 from py_logging import get_logger
 from datetime import datetime
 # from cvzone.SelfiSegmentationModule import SelfiSegmentation
@@ -40,6 +41,14 @@ class CaptureFace(object):
             os.makedirs(os.path.join(log_folder, "input_db", str(name)))
 
         return os.path.join(log_folder, "input_db", str(name))
+
+    def do_resizing(self, input_img):
+
+        # Resize the image while preserving the aspect ratio
+        target_size = (224, 224)
+        resized_image = cv2.resize(input_img, target_size, interpolation=cv2.INTER_AREA)
+
+        return resized_image
 
     def save_capture(self, log_folder, name, total_capture_cnt, sleep_t, cred_loc, cam_no):
         capture_from_stream = False
@@ -77,10 +86,11 @@ class CaptureFace(object):
                     cam_used = 1
                     [start_x, start_y, width_x, height_y] = get_cropped_params(cred_loc, cam_no)
                     cropped_image = img[start_y:start_y + height_y, start_x:start_x + width_x]
-                    cv2.imshow("original", cropped_image)
+                    resized_image = self.do_resizing(cropped_image)
+                    # cv2.imshow("original", resized_image)
                     rand_uuid = uuid.uuid1()
                     img_path = os.path.join(dir_path, "{}{}_{}".format(name, i, rand_uuid) + ".jpg")
-                    cv2.imwrite(img_path, cropped_image)
+                    cv2.imwrite(img_path, resized_image)
                     logger.info("File {} successfully written".format(img_path))
                 # if cv2.waitKey(1) & 0xFF == ord('q'):
                 #     break
