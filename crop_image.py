@@ -1,4 +1,9 @@
-import cv2
+"""
+ *  @file  crop_image.py
+ *  @brief Prints out the cropped co-ordinates based out of the drawn rectangle.
+ *
+ *  @author Kalp Garg.
+"""
 import tkinter as tk
 from PIL import ImageTk, Image
 

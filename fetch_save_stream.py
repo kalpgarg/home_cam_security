@@ -5,13 +5,13 @@
  *  @author Kalp Garg.
 """
 import argparse
-import json
 import os
 import time
 from datetime import datetime, timezone
 import pytz
 import cv2
 from py_logging import get_logger
+from common_utils import get_cam_info
 
 global logger
 
@@ -24,28 +24,6 @@ def return_datetime(mode=1):
         return dnt_pdt
     elif mode == 1:
         return dnt_pdt.strftime(date_format)
-
-
-def parse_cam_info_json_file(file_location):
-    if os.path.exists(file_location):
-        with open(file_location) as f:
-            cred_json = [line.rstrip('\n') for line in f]
-        cred_json = str(cred_json)
-        cred_json = "".join(cred_json.split())
-        cred_json = cred_json.replace("','", "")
-        cred_json = cred_json.replace("['", "")
-        cred_json = cred_json.replace("']", "")
-        cred_json = json.loads(cred_json)
-
-        u_name = cred_json["CP_PLUS_DVR"]["rtsp_cred"]["UserName"]
-        pass_w = cred_json["CP_PLUS_DVR"]["rtsp_cred"]["Password"]
-        IP = cred_json["CP_PLUS_DVR"]["rtsp_cred"]["IP"]
-        port_no = cred_json["CP_PLUS_DVR"]["rtsp_cred"]["port_number"]
-        cam_wid = cred_json["CP_PLUS_DVR"]["resolution"]["Width"]
-        cam_hei = cred_json["CP_PLUS_DVR"]["resolution"]["Height"]
-
-        return [u_name, pass_w, IP, port_no, cam_wid, cam_hei]
-
 
 class FetchStream(object):
 
@@ -134,7 +112,7 @@ if __name__ == '__main__':
                                  "{}_{}.txt".format("cam_stream_logs_", return_datetime(mode=1)))
     logger = get_logger(__name__, addl_file_loc, save_to_file=True)
     logger.info("Script version is: {}".format(cam_stream_args.version))
-    [u_name, pass_w, IP, port_no, cam_wid, cam_hei] = parse_cam_info_json_file(args.cred_loc)
+    [u_name, pass_w, IP, port_no, cam_wid, cam_hei] = get_cam_info(args.cred_loc)
 
     cam_object = FetchStream(u_name, pass_w, IP, port_no, cam_wid, cam_hei)
     cam_no = args.camera_no
