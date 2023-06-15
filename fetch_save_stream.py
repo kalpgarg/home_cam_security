@@ -46,7 +46,10 @@ class FetchStream(object):
         self.height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
         return cam
 
-    def display_save_live_stream(self, cams, log_folder, period, cam_no, save_stream=False):
+    def detect_motion(self):
+        pass
+
+    def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, save_stream=False):
         pTime = 0
         start_time = time.time()
         start_dt = return_datetime()
@@ -65,6 +68,7 @@ class FetchStream(object):
                 first_v_file, video_codec, self.fps, (self.width, self.height))
 
         while True:
+            motion_detected = True
             success, current_screen = cams.read()
             frame = current_screen
             # Full_frame = cv2.resize(self.main_screen, dim, interpolation=cv2.INTER_AREA)
@@ -74,7 +78,9 @@ class FetchStream(object):
             cv2.putText(frame, 'FPS: {}'.format(int(fps)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 2)
             # cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # cv2.imshow("CP_PLUS", frame)
-            if save_stream:
+            if motion_detection:
+                motion_detected = self.detect_motion()
+            if save_stream & motion_detected:
                 if time.time() - start_time > period:
                     logger.info("Saving stream")
                     end_dt = return_datetime()
@@ -105,6 +111,8 @@ if __name__ == '__main__':
                                  metavar='10', help='Timeperiod of saving livestream. Default is 10')
     cam_stream_args.add_argument('-cl', '--cred_loc', action='store', metavar='cam_info.json', type=str,
                                  help='path of cam info file', required=True)
+    cam_stream_args.add_argument('-md', '--motion_detection', action='store', metavar='True', type=bool,
+                                 help='saves video having motion', default=True)
 
     args = cam_stream_args.parse_args()
 
@@ -117,4 +125,4 @@ if __name__ == '__main__':
     cam_object = FetchStream(u_name, pass_w, IP, port_no, cam_wid, cam_hei)
     cam_no = args.camera_no
     cams = cam_object.connect_camera(cam_no)
-    cam_object.display_save_live_stream(cams, args.log_folder, args.time_period, args.camera_no, save_stream=True)
+    cam_object.display_save_live_stream(cams, args.log_folder, args.time_period, args.camera_no, args.motion_detection, save_stream=True)
