@@ -46,12 +46,18 @@ class FetchStream(object):
         self.height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
         return cam
 
-    def detect_motion(self):
+    def detect_motion(self, start_frame):
+        pass
+
+    def get_start_frame(self):
         pass
 
     def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, save_stream=False):
         pTime = 0
-        start_time = time.time()
+        cntr_save_stream = time.time()
+        cntr_start_frame = time.time()
+        upd_start_frame = True
+        upd_start_frame_period = 1*60*60 #in secs
         start_dt = return_datetime()
         video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
         # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
@@ -79,15 +85,22 @@ class FetchStream(object):
             # cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # cv2.imshow("CP_PLUS", frame)
             if motion_detection:
-                motion_detected = self.detect_motion()
+                if upd_start_frame:
+                    start_frame = self.get_start_frame()
+                    upd_start_frame = False
+                if time.time() - cntr_start_frame > upd_start_frame_period:
+                    upd_start_frame = True
+                    cntr_start_frame = time.time()
+
+                motion_detected = self.detect_motion(start_frame)
             if save_stream & motion_detected:
-                if time.time() - start_time > period:
+                if time.time() - cntr_save_stream > period:
                     logger.info("Saving stream")
                     end_dt = return_datetime()
                     video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
                     logger.info('FPS: {}'.format(int(fps)))
                     video_writer = cv2.VideoWriter(video_file, video_codec, self.fps, (self.width, self.height))
-                    start_time = time.time()
+                    cntr_save_stream = time.time()
                     start_dt = end_dt
                 if success:
                     video_writer.write(frame)
