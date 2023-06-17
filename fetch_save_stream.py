@@ -46,18 +46,11 @@ class FetchStream(object):
         self.height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
         return cam
 
-    def detect_motion(self, start_frame):
-        pass
-
-    def get_start_frame(self):
-        pass
-
     def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, save_stream=False):
         pTime = 0
         cntr_save_stream = time.time()
-        cntr_start_frame = time.time()
         upd_start_frame = True
-        upd_start_frame_period = 1*60*60 #in secs
+        motion_alarm_cntr = 0
         start_dt = return_datetime()
         video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
         # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
@@ -68,7 +61,8 @@ class FetchStream(object):
                 os.makedirs(os.path.join(log_folder, "recordings", "cam{}".format(cam_no)))
             recordings_dir = os.path.join(log_folder, "recordings", "cam{}".format(cam_no))
             logger.info("Recodings dir : {}".format(recordings_dir))
-            # Create a video write before entering the loop
+
+            # Create a video writer instance before entering the loop
             first_v_file = os.path.join(recordings_dir, "{}".format(start_dt)+ ".mp4")
             video_writer = cv2.VideoWriter(
                 first_v_file, video_codec, self.fps, (self.width, self.height))
@@ -81,29 +75,53 @@ class FetchStream(object):
             cTime = time.time()
             fps = 1 / (cTime - pTime)
             pTime = cTime
-            cv2.putText(frame, 'FPS: {}'.format(int(fps)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 2)
             # cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # cv2.imshow("CP_PLUS", frame)
             if motion_detection:
+                # Do this only first time.
                 if upd_start_frame:
-                    start_frame = self.get_start_frame()
+                    start_frame = frame
+                    start_frame = cv2.cvtColor(start_frame, cv2.COLOR_BGR2GRAY)
+                    start_frame = cv2.GaussianBlur(start_frame, (21, 21), 0)
                     upd_start_frame = False
-                if time.time() - cntr_start_frame > upd_start_frame_period:
-                    upd_start_frame = True
-                    cntr_start_frame = time.time()
 
-                motion_detected = self.detect_motion(start_frame)
-            if save_stream & motion_detected:
+                # Convert curr_frame to grayscale
+                curr_bw_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                curr_bw_frame = cv2.GaussianBlur(curr_bw_frame, (5, 5), 0)
+
+                # Calculate the difference b/w two frames
+                difference = cv2.absdiff(curr_bw_frame, start_frame)
+                threshold = cv2.threshold(difference, 25, 255, cv2.THRESH_BINARY)[1]
+                start_frame = curr_bw_frame
+
+                if threshold.sum() > 50000:
+                    print(threshold.sum())
+                    motion_alarm_cntr += 1
+                else:
+                    if motion_alarm_cntr > 0:
+                        motion_alarm_cntr -= 1
+                cv2.imshow("diff", threshold)
+
+                if motion_alarm_cntr > 20:
+                    motion_detected = True
+                else:
+                    motion_detected = False
+
+            if save_stream:
                 if time.time() - cntr_save_stream > period:
-                    logger.info("Saving stream")
-                    end_dt = return_datetime()
-                    video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
-                    logger.info('FPS: {}'.format(int(fps)))
-                    video_writer = cv2.VideoWriter(video_file, video_codec, self.fps, (self.width, self.height))
-                    cntr_save_stream = time.time()
-                    start_dt = end_dt
+                    if motion_detected:
+                        logger.info("Saving stream")
+                        cv2.putText(frame, 'FPS: {}'.format(int(fps)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0),
+                                    2)
+                        end_dt = return_datetime()
+                        video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
+                        logger.info('FPS: {}'.format(int(fps)))
+                        video_writer = cv2.VideoWriter(video_file, video_codec, self.fps, (self.width, self.height))
+                        cntr_save_stream = time.time()
+                        start_dt = end_dt
                 if success:
-                    video_writer.write(frame)
+                    if motion_detected:
+                        video_writer.write(frame)
                 else:
                     logger.info("Unable to read from stream.")
             if cv2.waitKey(1) & 0xFF == ord('q'):
