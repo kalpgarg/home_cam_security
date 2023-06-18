@@ -26,13 +26,25 @@ def get_cam_info(file_location):
         return [u_name, pass_w, IP, port_no, cam_wid, cam_hei]
 
 
-def get_cropped_params(file_location, cam_no):
+def get_cropped_params(file_location, cam_no, extract_type="rectangle"):
     if os.path.exists(file_location):
         cred_json = parse_json(file_location)
         cam_type = "cam{}".format(cam_no)
-        start_x = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["start_x"]
-        start_y = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["start_y"]
-        width_x = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["width_x"]
-        width_y = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["height_y"]
+        if extract_type == "rectangle":
+            start_x = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["rectangle"]["start_x"]
+            start_y = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["rectangle"]["start_y"]
+            width_x = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["rectangle"]["width_x"]
+            width_y = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["rectangle"]["height_y"]
+            return [start_x, start_y, width_x, width_y]
+        elif extract_type == "polygon":
+            vertices=[]
+            size = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["polygon"]["size"]
+            points_x = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["polygon"]["points_x"]
+            points_y = cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["polygon"]["points_y"]
+            for i in range(size):
+                vertices.append((points_x[i], points_y[i]))
 
-        return [start_x, start_y, width_x, width_y]
+            return vertices
+        else:
+            print("Extraction type doesn't exist. Choose either from polygon or rectangle")
+            quit()
