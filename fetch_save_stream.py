@@ -7,11 +7,14 @@
 import argparse
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime
+import numpy as np
 import pytz
 import cv2
 from py_logging import get_logger
 from common_utils import get_cam_info
+from common_utils import get_cropped_params
+import threading
 
 global logger
 
@@ -46,13 +49,20 @@ class FetchStream(object):
         self.height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
         return cam
 
-    def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, save_stream=False):
+    def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, cred_loc, save_stream=False):
         pTime = 0
+        retry_limit = 10
+        retry_count = 0
         cntr_save_stream = time.time()
+        motion_detect_time = time.time()
         upd_start_frame = True
+        motion_detected = True
+        prev_capture_running = False
+        old_video_file = ""
         motion_alarm_cntr = 0
         start_dt = return_datetime()
         video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
+        cropped_vertices = get_cropped_params(cred_loc, cam_no, extract_type="polygon")
         # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
 
         if save_stream:
@@ -63,64 +73,106 @@ class FetchStream(object):
             logger.info("Recodings dir : {}".format(recordings_dir))
 
             # Create a video writer instance before entering the loop
-            first_v_file = os.path.join(recordings_dir, "{}".format(start_dt)+ ".mp4")
+            old_video_file = os.path.join(recordings_dir, "{}".format(start_dt)+ ".mp4")
             video_writer = cv2.VideoWriter(
-                first_v_file, video_codec, self.fps, (self.width, self.height))
+                old_video_file, video_codec, self.fps, (self.width, self.height))
 
         while True:
-            motion_detected = True
             success, current_screen = cams.read()
             frame = current_screen
+
             # Full_frame = cv2.resize(self.main_screen, dim, interpolation=cv2.INTER_AREA)
             cTime = time.time()
             fps = 1 / (cTime - pTime)
             pTime = cTime
+            cv2.putText(frame, 'FPS: {}'.format(int(fps)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0),
+                        2)
             # cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # cv2.imshow("CP_PLUS", frame)
             if motion_detection:
-                # Do this only first time.
-                if upd_start_frame:
-                    start_frame = frame
-                    start_frame = cv2.cvtColor(start_frame, cv2.COLOR_BGR2GRAY)
-                    start_frame = cv2.GaussianBlur(start_frame, (21, 21), 0)
-                    upd_start_frame = False
+                if not prev_capture_running:
+                    # Do this only first time.
+                    if upd_start_frame:
+                        start_frame = frame
+                        # Do cropping, convert it to grayscale and apply gaussian kernel
+                        # Create an empty mask with the same dimensions as the image
+                        mask = np.zeros_like(start_frame)
 
-                # Convert curr_frame to grayscale
-                curr_bw_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                curr_bw_frame = cv2.GaussianBlur(curr_bw_frame, (5, 5), 0)
+                        # Fill the polygon region in the mask with white (255) pixels
+                        cv2.fillPoly(mask, [np.array(cropped_vertices)], (255, 255, 255))
 
-                # Calculate the difference b/w two frames
-                difference = cv2.absdiff(curr_bw_frame, start_frame)
-                threshold = cv2.threshold(difference, 25, 255, cv2.THRESH_BINARY)[1]
-                start_frame = curr_bw_frame
+                        # Apply the mask to the image to extract the region of interest
+                        start_frame = cv2.bitwise_and(start_frame, mask)
+                        start_frame = cv2.cvtColor(start_frame, cv2.COLOR_BGR2GRAY)
+                        start_frame = cv2.GaussianBlur(start_frame, (21, 21), 0)
+                        upd_start_frame = False
 
-                if threshold.sum() > 50000:
-                    print(threshold.sum())
-                    motion_alarm_cntr += 1
-                else:
-                    if motion_alarm_cntr > 0:
-                        motion_alarm_cntr -= 1
-                cv2.imshow("diff", threshold)
+                    # Convert curr_frame to grayscale
+                    # Create an empty mask with the same dimensions as the image
+                    mask = np.zeros_like(frame)
 
-                if motion_alarm_cntr > 20:
-                    motion_detected = True
-                else:
-                    motion_detected = False
+                    # Fill the polygon region in the mask with white (255) pixels
+                    cv2.fillPoly(mask, [np.array(cropped_vertices)], (255, 255, 255))
+
+                    # Apply the mask to the image to extract the region of interest
+                    curr_bw_frame = cv2.bitwise_and(frame, mask)
+                    curr_bw_frame = cv2.cvtColor(curr_bw_frame, cv2.COLOR_BGR2GRAY)
+                    curr_bw_frame = cv2.GaussianBlur(curr_bw_frame, (5, 5), 0)
+
+                    # Calculate the difference b/w two frames
+                    difference = cv2.absdiff(curr_bw_frame, start_frame)
+                    threshold = cv2.threshold(difference, 25, 255, cv2.THRESH_BINARY)[1]
+                    start_frame = curr_bw_frame
+
+                    if threshold.sum() > 50000:
+                        # 2,00,00,000 is the max value
+                        print(threshold.sum())
+                        motion_alarm_cntr += 1
+                    else:
+                        if motion_alarm_cntr > 0:
+                            motion_alarm_cntr -= 1
+                    # cv2.imshow("diff", start_frame)
+
+                    if motion_alarm_cntr > 20:
+                        print(motion_alarm_cntr)
+                        motion_detected = True
+                        logger.info("Motion detected")
+                        motion_detect_time = time.time()
+                        motion_alarm_cntr = 0
+                    else:
+                        motion_detected = False
 
             if save_stream:
                 if time.time() - cntr_save_stream > period:
                     if motion_detected:
-                        logger.info("Saving stream")
-                        cv2.putText(frame, 'FPS: {}'.format(int(fps)), (20, 70), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0),
-                                    2)
                         end_dt = return_datetime()
-                        video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
-                        logger.info('FPS: {}'.format(int(fps)))
-                        video_writer = cv2.VideoWriter(video_file, video_codec, self.fps, (self.width, self.height))
+                        new_video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
+                        logger.info("Saving stream to loc: {}".format(new_video_file))
+                        # retry this till retry limit
+                        while retry_count < retry_limit:
+                            try:
+                                # Attempt to create the video writer
+                                video_writer = cv2.VideoWriter(new_video_file, video_codec, self.fps,
+                                                               (self.width, self.height), isColor=True)
+                                break
+                            except cv2.error as e:
+                                print(str(e))
+                                if 'codec mpeg4' in str(e):
+                                    # Retry if timebase error occurs
+                                    retry_count += 1
+                                    print(f"Timebase error occurred. Retrying... Attempt {retry_count}/{retry_limit}")
+                                else:
+                                    # Other errors, handle or re-raise as needed
+                                    raise e
+
                         cntr_save_stream = time.time()
                         start_dt = end_dt
                 if success:
                     if motion_detected:
+                        if time.time() - motion_detect_time < period:
+                            prev_capture_running = True
+                        else:
+                            prev_capture_running = False
                         video_writer.write(frame)
                 else:
                     logger.info("Unable to read from stream.")
@@ -156,4 +208,4 @@ if __name__ == '__main__':
     cam_object = FetchStream(u_name, pass_w, IP, port_no, cam_wid, cam_hei)
     cam_no = args.camera_no
     cams = cam_object.connect_camera(cam_no)
-    cam_object.display_save_live_stream(cams, args.log_folder, args.time_period, args.camera_no, args.motion_detection, save_stream=True)
+    cam_object.display_save_live_stream(cams, args.log_folder, args.time_period, args.camera_no, args.motion_detection, args.cred_loc, save_stream=True)
