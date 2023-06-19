@@ -7,7 +7,7 @@
 import argparse
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import pytz
 import cv2
@@ -19,7 +19,7 @@ import threading
 global logger
 
 
-def return_datetime(mode=1):
+def return_datetime(mode=1, period=None):
     date_format = '%Y-%m-%d__%H_%M_%S'
     dnt_utc = datetime.now(tz=pytz.utc)
     dnt_pdt = dnt_utc.astimezone()
@@ -27,6 +27,9 @@ def return_datetime(mode=1):
         return dnt_pdt
     elif mode == 1:
         return dnt_pdt.strftime(date_format)
+    elif mode ==2:
+        delta_time = dnt_pdt + timedelta(seconds=period)
+        return delta_time.strftime(date_format)
 
 class FetchStream(object):
 
@@ -58,7 +61,6 @@ class FetchStream(object):
         upd_start_frame = True
         motion_detected = True
         prev_capture_running = False
-        old_video_file = ""
         motion_alarm_cntr = 0
         start_dt = return_datetime()
         video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
@@ -138,14 +140,8 @@ class FetchStream(object):
                         motion_detected = True
                         logger.info("Motion detected")
                         motion_detect_time = time.time()
-                        motion_alarm_cntr = 0
-                    else:
-                        motion_detected = False
-
-            if save_stream:
-                if time.time() - cntr_save_stream > period:
-                    if motion_detected:
-                        end_dt = return_datetime()
+                        start_dt = return_datetime()
+                        end_dt = return_datetime(mode=2, period=period)
                         new_video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
                         logger.info("Saving stream to loc: {}".format(new_video_file))
                         # retry this till retry limit
@@ -164,16 +160,18 @@ class FetchStream(object):
                                 else:
                                     # Other errors, handle or re-raise as needed
                                     raise e
+                        motion_alarm_cntr = 0
+                    else:
+                        motion_detected = False
 
-                        cntr_save_stream = time.time()
-                        start_dt = end_dt
                 if success:
                     if motion_detected:
                         if time.time() - motion_detect_time < period:
                             prev_capture_running = True
                         else:
                             prev_capture_running = False
-                        video_writer.write(frame)
+                        if save_stream:
+                            video_writer.write(frame)
                 else:
                     logger.info("Unable to read from stream.")
             if cv2.waitKey(1) & 0xFF == ord('q'):
