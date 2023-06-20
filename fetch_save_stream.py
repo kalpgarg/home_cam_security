@@ -53,10 +53,10 @@ class FetchStream(object):
         return cam
 
     def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, cred_loc, save_stream=False):
+        logger.info("Recroding from cam_no: {}".format(cam_no))
         pTime = 0
         retry_limit = 10
         retry_count = 0
-        cntr_save_stream = time.time()
         motion_detect_time = time.time()
         upd_start_frame = True
         motion_detected = True
@@ -128,7 +128,7 @@ class FetchStream(object):
 
                     if threshold.sum() > 50000:
                         # 2,00,00,000 is the max value
-                        print(threshold.sum())
+                        logger.info("Threshold sum is: {}".format(threshold.sum()))
                         motion_alarm_cntr += 1
                     else:
                         if motion_alarm_cntr > 0:
@@ -136,7 +136,6 @@ class FetchStream(object):
                     # cv2.imshow("diff", start_frame)
 
                     if motion_alarm_cntr > 20:
-                        print(motion_alarm_cntr)
                         motion_detected = True
                         logger.info("Motion detected")
                         motion_detect_time = time.time()
