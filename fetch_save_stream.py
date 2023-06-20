@@ -139,7 +139,7 @@ class FetchStream(object):
                             motion_alarm_cntr -= 1
                     # cv2.imshow("diff", start_frame)
 
-                    if motion_alarm_cntr > 20:
+                    if motion_alarm_cntr > 10:
                         motion_detected = True
                         logger.info("Motion detected")
                         motion_detect_time = time.time()
@@ -173,7 +173,6 @@ class FetchStream(object):
                             prev_capture_running = True
                             if save_stream:
                                 video_writer.write(frame)
-                                logger.info("Stream recorded.")
                         else:
                             prev_capture_running = False
                             video_writer.release()
@@ -194,8 +193,8 @@ if __name__ == '__main__':
                                  default="cam_stream_log",
                                  help="Location of the log folder")
     cam_stream_args.add_argument('-cn', '--camera_no', action='store', type= int, default=1, choices = range(1,5),metavar='[1-4]', help='Camera number to stream. Default is 1. Range is 1 to 4')
-    cam_stream_args.add_argument('-p', '--time_period', action='store', type=int, default=10,
-                                 metavar='10', help='Timeperiod of saving livestream. Default is 10')
+    cam_stream_args.add_argument('-p', '--time_period', action='store', type=int, default=15,
+                                 metavar='10', help='Timeperiod of saving livestream. Default is 15')
     cam_stream_args.add_argument('-cl', '--cred_loc', action='store', metavar='cam_info.json', type=str,
                                  help='path of cam info file', required=True)
     cam_stream_args.add_argument('-md', '--motion_detection', action='store', metavar='True', type=bool,
