@@ -113,8 +113,12 @@ class FetchStream(object):
                     # Create an empty mask with the same dimensions as the image
                     mask = np.zeros_like(frame)
 
-                    # Fill the polygon region in the mask with white (255) pixels
-                    cv2.fillPoly(mask, [np.array(cropped_vertices)], (255, 255, 255))
+                    try:
+                        # Fill the polygon region in the mask with white (255) pixels
+                        cv2.fillPoly(mask, [np.array(cropped_vertices)], (255, 255, 255))
+                    except Exception as e:
+                        logger.error("Exception found in fillpoly function. Exception is: {}".format(e))
+                        logger.info("Mask is {}. It's shape is {}.".format(mask, mask.shape))
 
                     # Apply the mask to the image to extract the region of interest
                     curr_bw_frame = cv2.bitwise_and(frame, mask)
