@@ -137,6 +137,7 @@ class FetchStream(object):
                     else:
                         if motion_alarm_cntr > 0:
                             motion_alarm_cntr -= 1
+                    logger.info("Motion Alarm counter: {}".format(motion_alarm_cntr))
                     # cv2.imshow("diff", start_frame)
 
                     if motion_alarm_cntr > 10:
