@@ -53,7 +53,7 @@ class FetchStream(object):
         return cam
 
     def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, cred_loc, save_stream=False):
-        logger.info("Recroding from cam_no: {}".format(cam_no))
+        logger.info("Recording from cam_no: {}".format(cam_no))
         pTime = 0
         retry_limit = 10
         retry_count = 0
@@ -72,7 +72,7 @@ class FetchStream(object):
             if not path_exists:
                 os.makedirs(os.path.join(log_folder, "recordings", "cam{}".format(cam_no)))
             recordings_dir = os.path.join(log_folder, "recordings", "cam{}".format(cam_no))
-            logger.info("Recodings dir : {}".format(recordings_dir))
+            logger.info("Recordings dir : {}".format(recordings_dir))
 
             # Create a video writer instance before entering the loop
             old_video_file = os.path.join(recordings_dir, "{}".format(start_dt)+ ".mp4")
@@ -171,15 +171,18 @@ class FetchStream(object):
                     if motion_detected:
                         if time.time() - motion_detect_time < period:
                             prev_capture_running = True
+                            if save_stream:
+                                video_writer.write(frame)
+                                logger.info("Stream recorded.")
                         else:
                             prev_capture_running = False
-                        if save_stream:
-                            video_writer.write(frame)
+                            video_writer.release()
+
                 else:
                     logger.info("Unable to read from stream.")
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cams.release()
-                video_writer.release()
+
                 cv2.destroyAllWindows()
                 break
 
