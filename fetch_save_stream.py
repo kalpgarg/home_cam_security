@@ -14,7 +14,6 @@ import cv2
 from py_logging import get_logger
 from common_utils import get_cam_info
 from common_utils import get_cropped_params
-import threading
 
 global logger
 

@@ -48,3 +48,19 @@ def get_cropped_params(file_location, cam_no, extract_type="rectangle"):
         else:
             print("Extraction type doesn't exist. Choose either from polygon or rectangle")
             quit()
+
+def get_keys(file_location, client_type="publisher"):
+    if os.path.exists(file_location):
+        cred_json = parse_json(file_location)
+        if client_type == "publisher":
+            pub_secret_key = cred_json["ZMQ_KEYS"]["PUBLISHER"]["SECRET_KEY"]
+            pub_public_key = cred_json["ZMQ_KEYS"]["PUBLISHER"]["PUBLIC_KEY"]
+            return [pub_secret_key, pub_public_key]
+        elif client_type == "subscriber":
+            sub_secret_key = cred_json["ZMQ_KEYS"]["SUBSCRIBER"]["SECRET_KEY"]
+            sub_public_key = cred_json["ZMQ_KEYS"]["SUBSCRIBER"]["PUBLIC_KEY"]
+            sub_public_curve_key = cred_json["ZMQ_KEYS"]["SUBSCRIBER"]["PUB_CURVE_KEY"]
+            return [sub_secret_key, sub_public_key, sub_public_curve_key]
+        else:
+            print("Extraction type doesn't exist. Choose either from publisher or subscriber")
+            quit()
