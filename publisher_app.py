@@ -75,26 +75,54 @@ class ZmqPublisher(object):
         logger.info("Directories to look: {}".format(directories))
         return directories
     def start_publishing(self, directory_list):
-
+        processed_files = []
+        for directory in directory_list:
+            processed_files.append(set())
         while True:
-            for directory in directory_list:
-
+            for i, directory in enumerate(directory_list):
                 # Get the list of files in the directory
                 files = os.listdir(directory)
-
+                # Keep track of the files already processed
+                new_files = set(files) - processed_files[i]
+                # cntr = 0
                 # Publish a message for each new file
-                for file in files:
+                for file in new_files:
                     file_path = os.path.join(directory, file)
-                    modified_time = os.path.getmtime(file_path)
-                    # logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
-                    current_time = time.time()
-                    time_diff = current_time - modified_time
-                    # logger.info("Time diff is: {}".format(time_diff))
-                    # If the file is new or modified within the last 1 seconds, publish it
-                    if time_diff <= 1:
+                    if file_path.endswith('.mp4'):
+                        modified_time = os.path.getmtime(file_path)
+                        current_time = time.time()
+                        time_diff = current_time - modified_time
+
+                        # If the file is new or modified within the last 1 seconds, publish it
+                        logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
+                        logger.info("Time diff is: {}".format(time_diff))
+                        # if time_diff <= 60:
+                        #     cntr += 1
+                        #
+                        #     if cntr < 2:
                         topic = directory  # Use the directory path as the topic
                         message = f"New file added: {file_path}"
                         self.socket.send_multipart([topic.encode(), message.encode()])
+                        processed_files[i].add(file)
+                        # cntr = 0
+
+                for file in files:
+                    file_path = os.path.join(directory, file)
+                    if file_path.endswith('.mp4'):
+                        modified_time = os.path.getmtime(file_path)
+                        current_time = time.time()
+                        time_diff = current_time - modified_time
+                        if time_diff >= 1*24*60*60: # if file is older than 2 days, delete it
+                            try:
+                                # Delete the file
+                                os.remove(file_path)
+                                logger.info(f"File '{file_path}' deleted successfully.")
+                            except FileNotFoundError:
+                                logger.error(f"File '{file_path}' not found.")
+                            except PermissionError:
+                                logger.error(f"Permission denied: unable to delete file '{file_path}'.")
+                            except Exception as e:
+                                logger.error(f"An error occurred while deleting the file: {str(e)}")
 
 if __name__ == '__main__':
     zmq_publisher_args = argparse.ArgumentParser(description="Look for new video stream addition and publishes it "
