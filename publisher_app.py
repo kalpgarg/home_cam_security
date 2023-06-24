@@ -126,7 +126,6 @@ def login():
     print("Route /login has been called")
     # creates dictionary of form data
     auth = request.form
-    print(auth)
     if not auth or not auth.get('username') or not auth.get('password'):
         # returns 401 if any name or / and password is missing
         return make_response(
@@ -136,9 +135,8 @@ def login():
         )
 
     user = User.query \
-        .filter_by(name=auth.get('name')) \
+        .filter_by(name=auth.get('username')) \
         .first()
-    print(user)
     if not user:
         # returns 401 if user does not exist
         return make_response(
@@ -151,11 +149,9 @@ def login():
         # generates the JWT Token
         token = jwt.encode({
             'public_id': user.public_id,
-            'exp': datetime.utcnow() + timedelta(minutes=30)
+            'exp': datetime.utcnow() + timedelta(minutes=60)
         }, app.config['SECRET_KEY'])
-        print(token)
-        return make_response(jsonify({'token': token.decode('UTF-8')}), 200)
-    print('403')
+        return make_response(jsonify({'token': token}), 200)
     # returns 403 if password is wrong
     return make_response(
         'Could not verify',
@@ -193,7 +189,7 @@ def signup():
         return make_response('Successfully registered.', 201)
     else:
         # returns 202 if user already exists
-        return make_response('User already exists. Please Log in.', 202)
+        return make_response('User already exists. Please Log in.', 409)
 
 class Publisher(object):
     def __init__(self):
