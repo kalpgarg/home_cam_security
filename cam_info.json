@@ -2,7 +2,7 @@
   "CP_PLUS_DVR": {
     "rtsp_cred": {
       "UserName": "admin",
-      "Password": "admin",
+      "Password": "love@123",
       "IP": "192.168.1.50",
       "port_number": "554",
       "__comment__": "Credentials for rtsp stream"
@@ -10,6 +10,24 @@
     "resolution": {
       "Width": 960,
       "Height": 1080
+    },
+    "crop_details": {
+      "cam1": {
+        "rectangle" : {
+        "start_x": 5,
+        "start_y": 131,
+        "width_x": 735,
+        "height_y": 949
+        },
+        "polygon": {
+          "size": 6,
+          "points_x": [5, 160, 160, 740, 740, 5],
+          "points_y": [682, 425, 131, 131, 1070, 1070]
+        }
+      }
     }
-  }
+  },
+  "KEYS": {
+      "SECRET_KEY": "THIS_IS_CP_PLUS_SECRET_KEY_FOR_FLASK_SERVER_DONT_SHARE"
+    }
 }

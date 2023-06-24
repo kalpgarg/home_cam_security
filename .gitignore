@@ -49,6 +49,7 @@ Thumbs.db
 *.app
 *.war
 
+
 # Large media files
 *.mp4
 *.tiff
@@ -59,4 +60,6 @@ Thumbs.db
 
 /certificates/private_keys/
 /certificates/public_keys/
+*.db
+instance/
 

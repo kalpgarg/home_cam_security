@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 import datetime
-import pytz
 from logging import FileHandler
 
 base_path = os.path.dirname(os.path.abspath(__file__))

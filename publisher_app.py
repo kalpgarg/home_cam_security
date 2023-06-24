@@ -1,6 +1,6 @@
 """
  *  @file  publisher_app.py
- *  @brief Look for new video stream addition and publishes it over zmq messaging
+ *  @brief Look for new video stream addition and publishes it over rest endpoint
  *
  *  @author Kalp Garg.
 """
@@ -8,12 +8,23 @@ from datetime import datetime, timedelta
 import pytz
 import os
 import time
-import zmq
 import argparse
 from py_logging import get_logger
-from zmq.auth.thread import ThreadAuthenticator
+# flask imports
+from flask import Flask, request, jsonify, make_response
+from flask_sqlalchemy import SQLAlchemy
+import uuid  # for public id
+from werkzeug.security import generate_password_hash, check_password_hash
+# imports for PyJWT authentication
+import jwt
+from datetime import datetime, timedelta
+from functools import wraps
+from common_utils import get_keys
+import pathlib
 
+base_path = pathlib.Path(__file__).parent.resolve()
 global logger
+global args
 
 def return_datetime(mode=1, period=None):
     date_format = '%Y-%m-%d__%H_%M_%S'
@@ -28,43 +39,165 @@ def return_datetime(mode=1, period=None):
         return delta_time.strftime(date_format)
 
 
-class ZmqPublisher(object):
-    def __init__(self, keys_dir):
-
-        public_keys_dir = os.path.join(keys_dir, 'public_keys')
-        secret_keys_dir = os.path.join(keys_dir, 'private_keys')
-
-        if not (
-                os.path.exists(keys_dir)
-                and os.path.exists(public_keys_dir)
-                and os.path.exists(secret_keys_dir)
-        ):
-            logger.error(
-                "Certificates are missing: run generate_certificates.py script first. Quitting..."
-            )
-            quit()
-        # Set up ZeroMQ context and socket
-        context = zmq.Context()
+def create_database(app1):
+    if not os.path.exists(os.path.join(base_path, 'user_db.db')):
+        with app1.app_context():
+            db.create_all()
+            print("database created")
 
 
-        # Start an authenticator for this context.
-        auth = ThreadAuthenticator(context)
-        auth.start()
-        auth.allow('127.0.0.1')
-        # Tell the authenticator how to handle CURVE requests
-        auth.configure_curve(domain='*', location=zmq.auth.CURVE_ALLOW_ANY)
+app = Flask(__name__)
+# configuration
+# NEVER HARDCODE YOUR CONFIGURATION IN YOUR CODE
+# INSTEAD CREATE A .env FILE AND STORE IN IT
+app.config['SECRET_KEY'] = get_keys(os.path.join(base_path, 'cam_info.json'))
+# database name
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user_db.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+# creates SQLALCHEMY object
+db = SQLAlchemy(app)
+create_database(app)
 
-        self.socket = context.socket(zmq.PUB)
-        pub_secret_file = os.path.join(secret_keys_dir, "publisher.key_secret")
-        server_public, server_secret = zmq.auth.load_certificate(pub_secret_file)
-        self.socket.curve_secretkey = server_secret
-        self.socket.curve_publickey = server_public
-        self.socket.curve_server = True  # must come before bind
-        self.socket.bind('tcp://*:9000')
+# Database ORMs
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(50), unique=True)
+    name = db.Column(db.String(100))
+    email = db.Column(db.String(70), unique=True)
+    password = db.Column(db.String(80))
+    last_index_fetched = db.Column(db.String(50))
+
+
+# decorator for verifying the JWT
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        # jwt is passed in the request header
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+        # return 401 if token is not passed
+        if not token:
+            return jsonify({'message': 'Token is missing !!'}), 401
+
+        try:
+            # decoding the payload to fetch the stored details
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            current_user = User.query \
+                .filter_by(public_id=data['public_id']) \
+                .first()
+        except:
+            return jsonify({
+                'message': 'Token is invalid !!'
+            }), 401
+        # returns the current logged in users context to the routes
+        return f(current_user, *args, **kwargs)
+
+    return decorated
+
+
+# User Database Route
+# this route sends back list of users
+@app.route('/user', methods=['GET'])
+@token_required
+def get_all_users(current_user):
+    # querying the database
+    # for all the entries in it
+    users = User.query.all()
+    # converting the query objects
+    # to list of jsons
+    output = []
+    for user in users:
+        # appending the user data json
+        # to the response list
+        output.append({
+            'public_id': user.public_id,
+            'name': user.name,
+            'email': user.email
+        })
+
+    return jsonify({'users': output})
+
+
+# route for logging user in
+@app.route('/login', methods=['POST'])
+def login():
+    # creates dictionary of form data
+    auth = request.form
+
+    if not auth or not auth.get('email') or not auth.get('password'):
+        # returns 401 if any email or / and password is missing
+        return make_response(
+            'Could not verify',
+            401,
+            {'WWW-Authenticate': 'Basic realm ="Login required !!"'}
+        )
+
+    user = User.query \
+        .filter_by(email=auth.get('email')) \
+        .first()
+
+    if not user:
+        # returns 401 if user does not exist
+        return make_response(
+            'Could not verify',
+            401,
+            {'WWW-Authenticate': 'Basic realm ="User does not exist !!"'}
+        )
+
+    if check_password_hash(user.password, auth.get('password')):
+        # generates the JWT Token
+        token = jwt.encode({
+            'public_id': user.public_id,
+            'exp': datetime.utcnow() + timedelta(minutes=30)
+        }, app.config['SECRET_KEY'])
+
+        return make_response(jsonify({'token': token.decode('UTF-8')}), 201)
+    # returns 403 if password is wrong
+    return make_response(
+        'Could not verify',
+        403,
+        {'WWW-Authenticate': 'Basic realm ="Wrong Password !!"'}
+    )
+
+
+# signup route
+@app.route('/signup', methods=['POST'])
+def signup():
+    # creates a dictionary of the form data
+    data = request.form
+
+    # gets name, email and password
+    name, email = data.get('name'), data.get('email')
+    password = data.get('password')
+
+    # checking for existing user
+    user = User.query \
+        .filter_by(email=email) \
+        .first()
+    if not user:
+        # database ORM object
+        user = User(
+            public_id=str(uuid.uuid4()),
+            name=name,
+            email=email,
+            password=generate_password_hash(password)
+        )
+        # insert user
+        db.session.add(user)
+        db.session.commit()
+
+        return make_response('Successfully registered.', 201)
+    else:
+        # returns 202 if user already exists
+        return make_response('User already exists. Please Log in.', 202)
+
+class Publisher(object):
+    def __init__(self):
+        pass
 
     def get_directories_loc(self, main_recording_dir, cam_list):
-        directories= []
-
+        directories = []
         for cam_no in cam_list:
             cam_recording_path = os.path.join(main_recording_dir, "cam{}".format(cam_no))
             if not os.path.exists(cam_recording_path):
@@ -74,6 +207,7 @@ class ZmqPublisher(object):
             directories.append(cam_recording_path)
         logger.info("Directories to look: {}".format(directories))
         return directories
+
     def start_publishing(self, directory_list):
         processed_files = []
         for directory in directory_list:
@@ -112,7 +246,7 @@ class ZmqPublisher(object):
                         modified_time = os.path.getmtime(file_path)
                         current_time = time.time()
                         time_diff = current_time - modified_time
-                        if time_diff >= 1*24*60*60: # if file is older than 2 days, delete it
+                        if time_diff >= 1 * 24 * 60 * 60:  # if file is older than 2 days, delete it
                             try:
                                 # Delete the file
                                 os.remove(file_path)
@@ -124,31 +258,35 @@ class ZmqPublisher(object):
                             except Exception as e:
                                 logger.error(f"An error occurred while deleting the file: {str(e)}")
 
-if __name__ == '__main__':
-    zmq_publisher_args = argparse.ArgumentParser(description="Look for new video stream addition and publishes it "
-                                                             "over zmq messaging")
-    zmq_publisher_args.version = "23.03.01"  # yy.mm.vv
-    zmq_publisher_args.add_argument('-v', '--version', action='version', help="displays the version. Format = yy.mm.v")
-    zmq_publisher_args.add_argument('-l', '--log_folder', type=str, metavar='zmq_publisher_log',
-                                    default="zmq_publisher_log",
-                                    help="Location of the log folder")
-    zmq_publisher_args.add_argument('-cn', '--camera_no', action='store', type=list, default=[1],
-                                    metavar='123', help='Camera recording to publish. Default is 1. Range is 1 to 4')
-    zmq_publisher_args.add_argument('-p', '--time_period', action='store', type=int, default=15,
-                                    metavar='10', help='Timeperiod of saving livestream. Default is 15')
-    zmq_publisher_args.add_argument('-kd', '--keys_dir', action='store', metavar='certificates', type=str,
-                                    help='path of keys dir. Generate using generate_zmq_certificates.py', required=True)
-    zmq_publisher_args.add_argument('-if', '--recordings_dir', action='store', metavar='cam_stream_log/recordings', type=str,
-                                    help='path of recordings directory', required=True)
 
-    args = zmq_publisher_args.parse_args()
+if __name__ == '__main__':
+    publisher_args = argparse.ArgumentParser(description="Look for new video stream addition and publishes it "
+                                             )
+    publisher_args.version = "23.03.01"  # yy.mm.vv
+    publisher_args.add_argument('-v', '--version', action='version', help="displays the version. Format = yy.mm.v")
+    publisher_args.add_argument('-l', '--log_folder', type=str, metavar='zmq_publisher_log',
+                                default="publisher_log",
+                                help="Location of the log folder")
+    publisher_args.add_argument('-cn', '--camera_no', action='store', type=list, default=[1],
+                                metavar='123', help='Camera recording to publish. Default is 1. Range is 1 to 4')
+    publisher_args.add_argument('-p', '--time_period', action='store', type=int, default=15,
+                                metavar='10', help='Timeperiod of saving livestream. Default is 15')
+    publisher_args.add_argument('-cl', '--config_file_loc', action='store', metavar='cam_info.json', type=str,
+                                help='path of cam_info.json which contains user specific configurations', required=True)
+    publisher_args.add_argument('-if', '--recordings_dir', action='store', metavar='cam_stream_log/recordings',
+                                type=str,
+                                help='path of recordings directory', required=True)
+
+    args = publisher_args.parse_args()
 
     addl_file_loc = os.path.join("zmq_publisher", args.log_folder,
                                  "{}_{}.txt".format("zmq_publisher_logs_", return_datetime(mode=1)))
     logger = get_logger(__name__, addl_file_loc, save_to_file=True)
-    logger.info("Script version is: {}".format(zmq_publisher_args.version))
+    logger.info("Script version is: {}".format(publisher_args.version))
 
 
-    zmq_pub = ZmqPublisher(args.keys_dir)
-    directory_list = zmq_pub.get_directories_loc(args.recordings_dir, args.camera_no)
-    zmq_pub.start_publishing(directory_list)
+    # pub = Publisher(args.config_file_loc)
+    # directory_list = pub.get_directories_loc(args.recordings_dir, args.camera_no)
+    # pub.start_publishing(directory_list)
+
+    app.run()

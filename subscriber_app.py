@@ -83,7 +83,6 @@ class MyApp(App):
         return MessageList()
 
 def subscriber_without_app():
-    print("123")
     context = zmq.Context()
     subscriber = context.socket(zmq.SUB)
     secret_keys_dir = os.path.join(base_path, "certificates", "private_keys")
@@ -93,6 +92,7 @@ def subscriber_without_app():
     # to make a CURVE connection.
     client_secret_file = os.path.join(secret_keys_dir, "subscriber.key_secret")
     client_public, client_secret = zmq.auth.load_certificate(client_secret_file)
+    print(client_public, client_secret)
     subscriber.curve_secretkey = client_secret
     subscriber.curve_publickey = client_public
 
