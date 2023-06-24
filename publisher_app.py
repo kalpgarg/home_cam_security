@@ -50,7 +50,7 @@ app = Flask(__name__)
 # configuration
 # NEVER HARDCODE YOUR CONFIGURATION IN YOUR CODE
 # INSTEAD CREATE A .env FILE AND STORE IN IT
-app.config['SECRET_KEY'] = get_keys(os.path.join(base_path, 'cam_info.json'))
+app.config['SECRET_KEY'] = get_keys(os.path.join(base_path, 'custom_cam_info.json'))
 # database name
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user_db.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
