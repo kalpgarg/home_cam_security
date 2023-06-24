@@ -46,7 +46,7 @@ def create_database(app1):
             db.create_all()
             print("database created")
 
-
+db = SQLAlchemy()
 app = Flask(__name__)
 # configuration
 # NEVER HARDCODE YOUR CONFIGURATION IN YOUR CODE
@@ -56,18 +56,19 @@ app.config['SECRET_KEY'] = get_keys(os.path.join(base_path, 'custom_cam_info.jso
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user_db.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 # creates SQLALCHEMY object
-db = SQLAlchemy(app)
-create_database(app)
+db.init_app(app)
 
 # Database ORMs
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(50), unique=True)
-    name = db.Column(db.String(100))
-    email = db.Column(db.String(70), unique=True)
+    name = db.Column(db.String(50), unique=True)
     password = db.Column(db.String(80))
     last_index_fetched = db.Column(db.String(50))
 
+User()
+create_database(app)
 
 # decorator for verifying the JWT
 def token_required(f):
@@ -120,7 +121,6 @@ def get_all_users(current_user):
         output.append({
             'public_id': user.public_id,
             'name': user.name,
-            'email': user.email
         })
 
     return jsonify({'users': output})
@@ -133,8 +133,8 @@ def login():
     # creates dictionary of form data
     auth = request.form
 
-    if not auth or not auth.get('email') or not auth.get('password'):
-        # returns 401 if any email or / and password is missing
+    if not auth or not auth.get('name') or not auth.get('password'):
+        # returns 401 if any name or / and password is missing
         return make_response(
             'Could not verify',
             401,
@@ -142,7 +142,7 @@ def login():
         )
 
     user = User.query \
-        .filter_by(email=auth.get('email')) \
+        .filter_by(name=auth.get('name')) \
         .first()
 
     if not user:
@@ -176,20 +176,19 @@ def signup():
     # creates a dictionary of the form data
     data = request.form
 
-    # gets name, email and password
-    name, email = data.get('name'), data.get('email')
+    # gets name and password
+    name = data.get('username')
     password = data.get('password')
 
     # checking for existing user
     user = User.query \
-        .filter_by(email=email) \
+        .filter_by(name=name) \
         .first()
     if not user:
         # database ORM object
         user = User(
             public_id=str(uuid.uuid4()),
             name=name,
-            email=email,
             password=generate_password_hash(password)
         )
         # insert user
