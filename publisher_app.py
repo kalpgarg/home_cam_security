@@ -97,12 +97,6 @@ def token_required(f):
 
     return decorated
 
-@app.route('/')
-def index():
-    print("Route / has been called")
-    server_ip = request.host.split(':')[0]
-    return f"The server IP is: {server_ip}"
-
 # User Database Route
 # this route sends back list of users
 @app.route('/user', methods=['GET'])
@@ -132,7 +126,7 @@ def login():
     print("Route /login has been called")
     # creates dictionary of form data
     auth = request.form
-
+    print(auth)
     if not auth or not auth.get('username') or not auth.get('password'):
         # returns 401 if any name or / and password is missing
         return make_response(
@@ -160,7 +154,7 @@ def login():
             'exp': datetime.utcnow() + timedelta(minutes=30)
         }, app.config['SECRET_KEY'])
 
-        return make_response(jsonify({'token': token.decode('UTF-8')}), 201)
+        return make_response(jsonify({'token': token.decode('UTF-8')}), 200)
     # returns 403 if password is wrong
     return make_response(
         'Could not verify',
