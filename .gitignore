@@ -62,4 +62,5 @@ Thumbs.db
 /certificates/public_keys/
 *.db
 instance/
+custom_cam_info.json
 
