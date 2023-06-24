@@ -133,7 +133,7 @@ def login():
     # creates dictionary of form data
     auth = request.form
 
-    if not auth or not auth.get('name') or not auth.get('password'):
+    if not auth or not auth.get('username') or not auth.get('password'):
         # returns 401 if any name or / and password is missing
         return make_response(
             'Could not verify',
