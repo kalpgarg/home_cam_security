@@ -138,7 +138,7 @@ def login():
     user = User.query \
         .filter_by(name=auth.get('name')) \
         .first()
-
+    print(user)
     if not user:
         # returns 401 if user does not exist
         return make_response(
@@ -153,8 +153,9 @@ def login():
             'public_id': user.public_id,
             'exp': datetime.utcnow() + timedelta(minutes=30)
         }, app.config['SECRET_KEY'])
-
+        print(token)
         return make_response(jsonify({'token': token.decode('UTF-8')}), 200)
+    print('403')
     # returns 403 if password is wrong
     return make_response(
         'Could not verify',
