@@ -9,6 +9,7 @@ import pytz
 import os
 import time
 import argparse
+from waitress import serve
 from py_logging import get_logger
 # flask imports
 from flask import Flask, request, jsonify, make_response
@@ -95,12 +96,18 @@ def token_required(f):
 
     return decorated
 
+@app.route('/')
+def index():
+    print("Route / has been called")
+    server_ip = request.host.split(':')[0]
+    return f"The server IP is: {server_ip}"
 
 # User Database Route
 # this route sends back list of users
 @app.route('/user', methods=['GET'])
 @token_required
 def get_all_users(current_user):
+    print("Route /user has been called")
     # querying the database
     # for all the entries in it
     users = User.query.all()
@@ -122,6 +129,7 @@ def get_all_users(current_user):
 # route for logging user in
 @app.route('/login', methods=['POST'])
 def login():
+    print("Route /login has been called")
     # creates dictionary of form data
     auth = request.form
 
@@ -164,6 +172,7 @@ def login():
 # signup route
 @app.route('/signup', methods=['POST'])
 def signup():
+    print("Route /signup has been called")
     # creates a dictionary of the form data
     data = request.form
 
@@ -288,5 +297,8 @@ if __name__ == '__main__':
     # pub = Publisher(args.config_file_loc)
     # directory_list = pub.get_directories_loc(args.recordings_dir, args.camera_no)
     # pub.start_publishing(directory_list)
-
-    app.run()
+    dev_environ = False
+    if dev_environ:
+        app.run()
+    else:
+        serve(app, host="0.0.0.0", port=443)
