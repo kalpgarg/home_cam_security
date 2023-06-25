@@ -41,9 +41,9 @@ class Publisher(object):
             for i, directory in enumerate(directory_list):
                 # Get the list of files in the directory
                 files = os.listdir(directory)
+                files.sort(key=lambda x: os.path.getmtime(x))
                 cam_no_str = os.path.split(directory)[1]
                 cam_no = int(cam_no_str.replace("cam", ""))
-                logger.info("Cam no: {}".format(cam_no))
                 # Keep track of the files already processed
                 new_files = set(files) - processed_files[i]
                 # Add db entry for each new file
@@ -64,9 +64,10 @@ class Publisher(object):
                         if last_row is None:
                             index = 1
                         else:
-                            index = last_row.index_record + 1
+                            index = last_row[1] + 1
                         self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path) \
                               VALUES ({}, {},'{}');".format(index, cam_no, full_file_path))
+                        self.main_db.commit()
 
                         processed_files[i].add(file)
                         # cntr = 0
@@ -81,6 +82,7 @@ class Publisher(object):
                             try:
                                 # Delete the file and remove its entry
                                 self.main_db.execute("DELETE from recordings where file_path = '{}';".format(os.path.join(base_path, file_path)))
+                                self.main_db.commit()
                                 os.remove(file_path)
                                 logger.info(f"File '{file_path}' deleted successfully.")
                             except FileNotFoundError:
