@@ -61,7 +61,10 @@ class Publisher(object):
                         logger.info(message)
                         full_file_path = os.path.join(base_path, file_path)
                         last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
-                        index = last_row.index_record + 1
+                        if last_row is None:
+                            index = 1
+                        else:
+                            index = last_row.index_record + 1
                         self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path) \
                               VALUES ({}, {},'{}');".format(index, cam_no, full_file_path))
 
@@ -88,7 +91,7 @@ class Publisher(object):
                                 logger.error(f"An error occurred while deleting the file: {str(e)}")
 
     def __del__(self):
-        self.db.close()
+        self.main_db.close()
 
 
 if __name__ == '__main__':
