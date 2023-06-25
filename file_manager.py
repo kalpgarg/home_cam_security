@@ -41,6 +41,7 @@ class Publisher(object):
             for i, directory in enumerate(directory_list):
                 # Get the list of files in the directory
                 files = os.listdir(directory)
+                files = [os.path.join(directory, f) for f in files]
                 files.sort(key=lambda x: os.path.getmtime(x))
                 cam_no_str = os.path.split(directory)[1]
                 cam_no = int(cam_no_str.replace("cam", ""))
@@ -48,7 +49,7 @@ class Publisher(object):
                 new_files = set(files) - processed_files[i]
                 # Add db entry for each new file
                 for file in new_files:
-                    file_path = os.path.join(directory, file)
+                    file_path = file
                     if file_path.endswith('.mp4'):
                         modified_time = os.path.getmtime(file_path)
                         current_time = time.time()
