@@ -123,6 +123,7 @@ def get_all_users(current_user):
 @app.route('/new-data/<int:last_fetched>', methods=['GET'])
 @token_required
 def get_new_data(current_user, last_fetched):
+    logger.info("Route /new-data has been called")
     if last_fetched is None:
         logger.info("Requires last fetched index.")
         return make_response(
@@ -148,8 +149,7 @@ def get_new_data(current_user, last_fetched):
     logger.info("Last index updated to {} for user {}".format(last_index, current_user))
     db.session.commit()
 
-    return jsonify({'new_data': output})
-
+    return make_response('Data fetched', 200, jsonify({'new_data': output}))
 
 @app.route('/fetch-data/<int:file_index>', methods=['GET'])
 @token_required
@@ -174,8 +174,7 @@ def get_video(current_user, file_index):
             403,
             {'WWW-Authenticate': 'File path not exist'}
         )
-    return send_file(video_fpath, as_attachment=True)
-
+    return make_response('File sent', 200, send_file(video_fpath, as_attachment=True))
 
 # route for logging user in
 @app.route('/login', methods=['POST'])
