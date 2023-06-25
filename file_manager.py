@@ -51,13 +51,11 @@ class Publisher(object):
                 for file in new_files:
                     file_path = file
                     if file_path.endswith('.mp4'):
-                        modified_time = os.path.getmtime(file_path)
-                        current_time = time.time()
-                        time_diff = current_time - modified_time
-
-                        logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
-                        logger.info("Time diff is: {}".format(time_diff))
-
+                        # modified_time = os.path.getmtime(file_path)
+                        # current_time = time.time()
+                        # time_diff = current_time - modified_time
+                        # logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
+                        # logger.info("Time diff is: {}".format(time_diff))
                         message = f"New file added: {file_path}"
                         logger.info(message)
                         full_file_path = os.path.join(base_path, file_path)
@@ -66,10 +64,16 @@ class Publisher(object):
                             index = 1
                         else:
                             index = last_row[1] + 1
-                        self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path) \
-                              VALUES ({}, {},'{}');".format(index, cam_no, full_file_path))
-                        self.main_db.commit()
-
+                        try:
+                            self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path) \
+                                  VALUES ({}, {},'{}');".format(index, cam_no, full_file_path))
+                            self.main_db.commit()
+                        except Exception as e:
+                            print(e)
+                            if "UNIQUE constraint" not in str(e):
+                                raise
+                            else:
+                                logger.info("Entry {} already exist".format(file_path))
                         processed_files[i].add(file)
                         # cntr = 0
 
