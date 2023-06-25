@@ -11,7 +11,6 @@ from py_logging import get_logger
 # flask imports
 from flask import Flask, request, jsonify, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import login_user, login_required, logout_user, current_user
 import uuid  # for public id
 from werkzeug.security import generate_password_hash, check_password_hash
 # imports for PyJWT authentication
