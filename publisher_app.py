@@ -22,13 +22,12 @@ import pathlib
 
 base_path = pathlib.Path(__file__).parent.resolve()
 global logger
-global args
 
 def create_database(app1):
     if not os.path.exists(os.path.join(base_path, 'user_db.db')):
         with app1.app_context():
             db.create_all()
-            logger.info("database created")
+            print("database created")
 
 db = SQLAlchemy()
 app = Flask(__name__)
@@ -241,7 +240,7 @@ if __name__ == '__main__':
                                              )
     publisher_args.version = "23.03.01"  # yy.mm.vv
     publisher_args.add_argument('-v', '--version', action='version', help="displays the version. Format = yy.mm.v")
-    publisher_args.add_argument('-l', '--log_folder', type=str, metavar='zmq_publisher_log',
+    publisher_args.add_argument('-l', '--log_folder', type=str, metavar='publisher_log',
                                 default="publisher_log",
                                 help="Location of the log folder")
     args = publisher_args.parse_args()
