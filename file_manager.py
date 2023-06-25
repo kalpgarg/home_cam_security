@@ -96,8 +96,8 @@ if __name__ == '__main__':
                                                 )
     file_manager_args.version = "23.03.01"  # yy.mm.vv
     file_manager_args.add_argument('-v', '--version', action='version', help="displays the version. Format = yy.mm.v")
-    file_manager_args.add_argument('-l', '--log_folder', type=str, metavar='zmq_publisher_log',
-                                   default="publisher_log",
+    file_manager_args.add_argument('-l', '--log_folder', type=str, metavar='file_manager_log',
+                                   default="file_manager_log",
                                    help="Location of the log folder")
     file_manager_args.add_argument('-cn', '--camera_no', action='store', type=list, default=[1],
                                    metavar='123', help='Camera recording to publish. Default is 1. Range is 1 to 4')
