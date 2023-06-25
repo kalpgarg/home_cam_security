@@ -77,17 +77,19 @@ def token_required(f):
         # jwt is passed in the request header
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
+        print(f"token is {token}")
         # return 401 if token is not passed
         if not token:
             return jsonify({'message': 'Token is missing !!'}), 401
 
         try:
             # decoding the payload to fetch the stored details
-            data = jwt.decode(token, app.config['SECRET_KEY'])
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
             current_user = User.query \
                 .filter_by(public_id=data['public_id']) \
                 .first()
-        except:
+        except Exception as e:
+            print(e)
             return jsonify({
                 'message': 'Token is invalid !!'
             }), 401
@@ -207,7 +209,7 @@ def login():
             'public_id': user.public_id,
             'exp': datetime.utcnow() + timedelta(minutes=60),
             'last_index': user.last_index_fetched
-        }, app.config['SECRET_KEY'])
+        }, app.config['SECRET_KEY'], algorithm='HS256')
         return make_response(jsonify({'token': token}), 200)
     # returns 403 if password is wrong
     return make_response(
