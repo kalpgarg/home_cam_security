@@ -11,6 +11,7 @@ from py_logging import get_logger
 # flask imports
 from flask import Flask, request, jsonify, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import login_user, login_required, logout_user, current_user
 import uuid  # for public id
 from werkzeug.security import generate_password_hash, check_password_hash
 # imports for PyJWT authentication
@@ -23,11 +24,13 @@ import pathlib
 base_path = pathlib.Path(__file__).parent.resolve()
 global logger
 
+
 def create_database(app1):
     if not os.path.exists(os.path.join(base_path, 'user_db.db')):
         with app1.app_context():
             db.create_all()
             print("database created")
+
 
 db = SQLAlchemy()
 app = Flask(__name__)
@@ -40,6 +43,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 # creates SQLALCHEMY object
 db.init_app(app)
 
+
 # Database ORMs
 class Recordings(db.Model):
     __tablename__ = 'recordings'
@@ -48,6 +52,7 @@ class Recordings(db.Model):
     cam_no = db.Column(db.Integer)
     file_path = db.Column(db.String(200), unique=True)
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -59,9 +64,11 @@ class User(db.Model):
     last_index_fetched = db.Column(db.String(50))
     # recordings = db.relationship('Recordings')
 
+
 User()
 Recordings()
 create_database(app)
+
 
 # decorator for verifying the JWT
 def token_required(f):
@@ -90,6 +97,7 @@ def token_required(f):
 
     return decorated
 
+
 # User Database Route
 # this route sends back list of users
 @app.route('/user', methods=['GET'])
@@ -112,10 +120,10 @@ def get_all_users(current_user):
 
     return jsonify({'users': output})
 
+
 @app.route('/new-data/<int:last_fetched>', methods=['GET'])
 @token_required
-def get_new_data(last_fetched):
-    logger.info("Route /new-data has been called")
+def get_new_data(current_user, last_fetched):
     if last_fetched is None:
         logger.info("Requires last fetched index.")
         return make_response(
@@ -136,12 +144,17 @@ def get_new_data(last_fetched):
             'cam_no': data.cam_no,
             'file_path': data.file_path
         })
+    last_index = Recordings.query.order_by(Recordings.index_record.desc()).first()
+    current_user.update({'last_index_fetched': last_index})
+    logger.info("Last index updated to {} for user {}".format(last_index, current_user))
+    db.session.commit()
 
     return jsonify({'new_data': output})
 
+
 @app.route('/fetch-data/<int:file_index>', methods=['GET'])
 @token_required
-def get_video(file_index):
+def get_video(current_user, file_index):
     logger.info("Route /fetch-data has been called")
     if file_index is None:
         logger.info("Requires index of file.")
@@ -163,6 +176,7 @@ def get_video(file_index):
             {'WWW-Authenticate': 'File path not exist'}
         )
     return send_file(video_fpath, as_attachment=True)
+
 
 # route for logging user in
 @app.route('/login', methods=['POST'])
@@ -193,7 +207,8 @@ def login():
         # generates the JWT Token
         token = jwt.encode({
             'public_id': user.public_id,
-            'exp': datetime.utcnow() + timedelta(minutes=60)
+            'exp': datetime.utcnow() + timedelta(minutes=60),
+            'last_index': user.last_index_fetched
         }, app.config['SECRET_KEY'])
         return make_response(jsonify({'token': token}), 200)
     # returns 403 if password is wrong
@@ -224,7 +239,9 @@ def signup():
         user = User(
             public_id=str(uuid.uuid4()),
             name=name,
-            password=generate_password_hash(password)
+            password=generate_password_hash(password),
+            last_index_fetched=1,
+            user_created_at=datetime.utcnow()
         )
         # insert user
         db.session.add(user)
@@ -234,6 +251,7 @@ def signup():
     else:
         # returns 202 if user already exists
         return make_response('User already exists. Please Log in.', 409)
+
 
 if __name__ == '__main__':
     publisher_args = argparse.ArgumentParser(description="server for creating a user and sending data"

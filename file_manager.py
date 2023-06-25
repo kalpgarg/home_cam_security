@@ -69,7 +69,6 @@ class Publisher(object):
                                   VALUES ({}, {},'{}');".format(index, cam_no, full_file_path))
                             self.main_db.commit()
                         except Exception as e:
-                            print(e)
                             if "UNIQUE constraint" not in str(e):
                                 raise
                             else:
