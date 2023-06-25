@@ -1,5 +1,6 @@
 import os, json
-
+from datetime import datetime, timedelta
+import pytz
 
 def parse_json(file):
     with open(file) as f:
@@ -54,3 +55,15 @@ def get_keys(file_location):
         cred_json = parse_json(file_location)
         secret_key = cred_json["KEYS"]["SECRET_KEY"]
         return secret_key
+
+def return_datetime(mode=1, period=None):
+    date_format = '%Y-%m-%d__%H_%M_%S'
+    dnt_utc = datetime.now(tz=pytz.utc)
+    dnt_pdt = dnt_utc.astimezone()
+    if mode == 0:
+        return dnt_pdt
+    elif mode == 1:
+        return dnt_pdt.strftime(date_format)
+    elif mode == 2:
+        delta_time = dnt_pdt + timedelta(seconds=period)
+        return delta_time.strftime(date_format)

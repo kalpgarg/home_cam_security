@@ -1,18 +1,15 @@
 """
  *  @file  publisher_app.py
- *  @brief Look for new video stream addition and publishes it over rest endpoint
+ *  @brief Server for user creation and publishes video it over REST endpoint
  *
  *  @author Kalp Garg.
 """
-from datetime import datetime, timedelta
-import pytz
 import os
-import time
 import argparse
 from waitress import serve
 from py_logging import get_logger
 # flask imports
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
 import uuid  # for public id
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -20,37 +17,23 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
-from common_utils import get_keys
+from common_utils import get_keys, return_datetime
 import pathlib
 
 base_path = pathlib.Path(__file__).parent.resolve()
 global logger
 global args
 
-def return_datetime(mode=1, period=None):
-    date_format = '%Y-%m-%d__%H_%M_%S'
-    dnt_utc = datetime.now(tz=pytz.utc)
-    dnt_pdt = dnt_utc.astimezone()
-    if mode == 0:
-        return dnt_pdt
-    elif mode == 1:
-        return dnt_pdt.strftime(date_format)
-    elif mode == 2:
-        delta_time = dnt_pdt + timedelta(seconds=period)
-        return delta_time.strftime(date_format)
-
-
 def create_database(app1):
     if not os.path.exists(os.path.join(base_path, 'user_db.db')):
         with app1.app_context():
             db.create_all()
-            print("database created")
+            logger.info("database created")
 
 db = SQLAlchemy()
 app = Flask(__name__)
 # configuration
 # NEVER HARDCODE YOUR CONFIGURATION IN YOUR CODE
-# INSTEAD CREATE A .env FILE AND STORE IN IT
 app.config['SECRET_KEY'] = get_keys(os.path.join(base_path, 'custom_cam_info.json'))
 # database name
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user_db.db'
@@ -59,15 +42,26 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db.init_app(app)
 
 # Database ORMs
+class Recordings(db.Model):
+    __tablename__ = 'recordings'
+    id = db.Column(db.Integer, primary_key=True)
+    index_record = db.Column(db.Integer, unique=True)
+    cam_no = db.Column(db.Integer)
+    file_path = db.Column(db.String(200), unique=True)
+    # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(50), unique=True)
     name = db.Column(db.String(50), unique=True)
     password = db.Column(db.String(80))
+    user_created_at = db.Column(db.DateTime(timezone=True), default=datetime.now)
     last_index_fetched = db.Column(db.String(50))
+    # recordings = db.relationship('Recordings')
 
 User()
+Recordings()
 create_database(app)
 
 # decorator for verifying the JWT
@@ -102,7 +96,7 @@ def token_required(f):
 @app.route('/user', methods=['GET'])
 @token_required
 def get_all_users(current_user):
-    print("Route /user has been called")
+    logger.info("Route /user has been called")
     # querying the database
     # for all the entries in it
     users = User.query.all()
@@ -119,11 +113,62 @@ def get_all_users(current_user):
 
     return jsonify({'users': output})
 
+@app.route('/new-data/<int:last_fetched>', methods=['GET'])
+@token_required
+def get_new_data(last_fetched):
+    logger.info("Route /new-data has been called")
+    if last_fetched is None:
+        logger.info("Requires last fetched index.")
+        return make_response(
+            'Could not fetch',
+            401,
+            {'WWW-Authenticate': 'Last fetched index is required'}
+        )
+    logger.info("last fetched index: ", last_fetched)
+    # querying the database
+    # for all the entries in it
+    new_data = Recordings.query.filter(Recordings.index_record > last_fetched)
+    output = []
+    for data in new_data:
+        # appending the user data json
+        # to the response list
+        output.append({
+            'index': data.index_record,
+            'cam_no': data.cam_no,
+            'file_path': data.file_path
+        })
+
+    return jsonify({'new_data': output})
+
+@app.route('/fetch-data/<int:file_index>', methods=['GET'])
+@token_required
+def get_video(file_index):
+    logger.info("Route /fetch-data has been called")
+    if file_index is None:
+        logger.info("Requires index of file.")
+        return make_response(
+            'Could not fetch',
+            401,
+            {'WWW-Authenticate': 'File index is required'}
+        )
+    logger.info("File index: ", file_index)
+    # querying the database
+    # for all the entries in it
+    new_data = Recordings.query.filter_by(index_record=file_index)
+    video_fpath = new_data.file_path
+    if not os.path.exists(video_fpath):
+        logger.info(f"Video file path {video_fpath} doesn't exist..")
+        return make_response(
+            'File path not exist',
+            403,
+            {'WWW-Authenticate': 'File path not exist'}
+        )
+    return send_file(video_fpath, as_attachment=True)
 
 # route for logging user in
 @app.route('/login', methods=['POST'])
 def login():
-    print("Route /login has been called")
+    logger.info("Route /login has been called")
     # creates dictionary of form data
     auth = request.form
     if not auth or not auth.get('username') or not auth.get('password'):
@@ -163,7 +208,7 @@ def login():
 # signup route
 @app.route('/signup', methods=['POST'])
 def signup():
-    print("Route /signup has been called")
+    logger.info("Route /signup has been called")
     # creates a dictionary of the form data
     data = request.form
 
@@ -191,102 +236,21 @@ def signup():
         # returns 202 if user already exists
         return make_response('User already exists. Please Log in.', 409)
 
-class Publisher(object):
-    def __init__(self):
-        pass
-
-    def get_directories_loc(self, main_recording_dir, cam_list):
-        directories = []
-        for cam_no in cam_list:
-            cam_recording_path = os.path.join(main_recording_dir, "cam{}".format(cam_no))
-            if not os.path.exists(cam_recording_path):
-                logger.error(
-                    "Given recordings directory {} doesn't exist.Please check.. Quitting...".format(cam_recording_path))
-                quit()
-            directories.append(cam_recording_path)
-        logger.info("Directories to look: {}".format(directories))
-        return directories
-
-    def start_publishing(self, directory_list):
-        processed_files = []
-        for directory in directory_list:
-            processed_files.append(set())
-        while True:
-            for i, directory in enumerate(directory_list):
-                # Get the list of files in the directory
-                files = os.listdir(directory)
-                # Keep track of the files already processed
-                new_files = set(files) - processed_files[i]
-                # cntr = 0
-                # Publish a message for each new file
-                for file in new_files:
-                    file_path = os.path.join(directory, file)
-                    if file_path.endswith('.mp4'):
-                        modified_time = os.path.getmtime(file_path)
-                        current_time = time.time()
-                        time_diff = current_time - modified_time
-
-                        # If the file is new or modified within the last 1 seconds, publish it
-                        logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
-                        logger.info("Time diff is: {}".format(time_diff))
-                        # if time_diff <= 60:
-                        #     cntr += 1
-                        #
-                        #     if cntr < 2:
-                        topic = directory  # Use the directory path as the topic
-                        message = f"New file added: {file_path}"
-                        self.socket.send_multipart([topic.encode(), message.encode()])
-                        processed_files[i].add(file)
-                        # cntr = 0
-
-                for file in files:
-                    file_path = os.path.join(directory, file)
-                    if file_path.endswith('.mp4'):
-                        modified_time = os.path.getmtime(file_path)
-                        current_time = time.time()
-                        time_diff = current_time - modified_time
-                        if time_diff >= 1 * 24 * 60 * 60:  # if file is older than 2 days, delete it
-                            try:
-                                # Delete the file
-                                os.remove(file_path)
-                                logger.info(f"File '{file_path}' deleted successfully.")
-                            except FileNotFoundError:
-                                logger.error(f"File '{file_path}' not found.")
-                            except PermissionError:
-                                logger.error(f"Permission denied: unable to delete file '{file_path}'.")
-                            except Exception as e:
-                                logger.error(f"An error occurred while deleting the file: {str(e)}")
-
-
 if __name__ == '__main__':
-    publisher_args = argparse.ArgumentParser(description="Look for new video stream addition and publishes it "
+    publisher_args = argparse.ArgumentParser(description="server for creating a user and sending data"
                                              )
     publisher_args.version = "23.03.01"  # yy.mm.vv
     publisher_args.add_argument('-v', '--version', action='version', help="displays the version. Format = yy.mm.v")
     publisher_args.add_argument('-l', '--log_folder', type=str, metavar='zmq_publisher_log',
                                 default="publisher_log",
                                 help="Location of the log folder")
-    publisher_args.add_argument('-cn', '--camera_no', action='store', type=list, default=[1],
-                                metavar='123', help='Camera recording to publish. Default is 1. Range is 1 to 4')
-    publisher_args.add_argument('-p', '--time_period', action='store', type=int, default=15,
-                                metavar='10', help='Timeperiod of saving livestream. Default is 15')
-    publisher_args.add_argument('-cl', '--config_file_loc', action='store', metavar='cam_info.json', type=str,
-                                help='path of cam_info.json which contains user specific configurations', required=True)
-    publisher_args.add_argument('-if', '--recordings_dir', action='store', metavar='cam_stream_log/recordings',
-                                type=str,
-                                help='path of recordings directory', required=True)
-
     args = publisher_args.parse_args()
 
-    addl_file_loc = os.path.join("zmq_publisher", args.log_folder,
-                                 "{}_{}.txt".format("zmq_publisher_logs_", return_datetime(mode=1)))
+    addl_file_loc = os.path.join("publisher", args.log_folder,
+                                 "{}_{}.txt".format("publisher_logs_", return_datetime(mode=1)))
     logger = get_logger(__name__, addl_file_loc, save_to_file=True)
     logger.info("Script version is: {}".format(publisher_args.version))
 
-
-    # pub = Publisher(args.config_file_loc)
-    # directory_list = pub.get_directories_loc(args.recordings_dir, args.camera_no)
-    # pub.start_publishing(directory_list)
     dev_environ = False
     if dev_environ:
         app.run()
