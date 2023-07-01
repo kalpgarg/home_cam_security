@@ -67,7 +67,7 @@ class Publisher(object):
                             index = last_row[1] + 1
                         try:
                             self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path,cam_loc) \
-                                  VALUES ({}, {},'{}');".format(index, cam_no, full_file_path, cam_loc))
+                                  VALUES ({}, {},'{}','{}');".format(index, cam_no, full_file_path, cam_loc))
                             self.main_db.commit()
                         except Exception as e:
                             if "UNIQUE constraint" not in str(e):
