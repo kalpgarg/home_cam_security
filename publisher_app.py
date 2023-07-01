@@ -134,7 +134,7 @@ def get_new_data(current_user, last_fetched):
             401,
             {'WWW-Authenticate': 'Last fetched index is required'}
         )
-    logger.info("last fetched index: ", last_fetched)
+    logger.info("last fetched index: {}".format(last_fetched))
     # querying the database
     # for all the entries in it
     new_data = Recordings.query.filter(Recordings.index_record > last_fetched)
@@ -149,11 +149,11 @@ def get_new_data(current_user, last_fetched):
             'cam_loc': data.cam_loc
         })
     last_index = Recordings.query.order_by(Recordings.index_record.desc()).first()
-    current_user.update({'last_index_fetched': last_index})
+    current_user.last_index_fetched = int(last_index.index_record)
     logger.info("Last index updated to {} for user {}".format(last_index, current_user))
     db.session.commit()
 
-    return make_response('Data fetched', 200, jsonify({'new_data': output}))
+    return jsonify({'new_data': output}), 200
 
 @app.route('/fetch-data/<int:file_index>', methods=['GET'])
 @token_required
@@ -178,7 +178,7 @@ def get_video(current_user, file_index):
             403,
             {'WWW-Authenticate': 'File path not exist'}
         )
-    return make_response('File sent', 200, send_file(video_fpath, as_attachment=True))
+    return send_file(video_fpath, as_attachment=True), 200
 
 # route for logging user in
 @app.route('/login', methods=['POST'])
