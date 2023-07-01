@@ -111,6 +111,7 @@ class FetchStream(object):
                     # Convert curr_frame to grayscale
                     # Create an empty mask with the same dimensions as the image
                     mask = np.zeros_like(frame)
+                    # todo check below for few times otherwise try to re-establish the connection
                     if mask.shape == ():
                         logger.error("Couldn't get frame. Retrying... ")
                         logger.info("Mask is {}. Its shape is {}. Its size is {} ".format(mask, mask.shape, mask.size))

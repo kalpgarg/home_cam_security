@@ -25,6 +25,12 @@
           "points_y": [682, 425, 131, 131, 1070, 1070]
         }
       }
+    },
+    "cam_loc_details": {
+      "cam1": "Upper porch",
+      "cam2": "Main gate",
+      "cam3": "Lower porch",
+      "cam4": "Side gate"
     }
   },
   "KEYS": {

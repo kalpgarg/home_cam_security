@@ -50,6 +50,13 @@ def get_cropped_params(file_location, cam_no, extract_type="rectangle"):
             print("Extraction type doesn't exist. Choose either from polygon or rectangle")
             quit()
 
+def get_cam_loc(file_location, cam_no):
+    if os.path.exists(file_location):
+        cred_json = parse_json(file_location)
+        cam_type = "cam{}".format(cam_no)
+        return cred_json["CP_PLUS_DVR"]["cam_loc_details"][cam_type]
+
+
 def get_keys(file_location):
     if os.path.exists(file_location):
         cred_json = parse_json(file_location)

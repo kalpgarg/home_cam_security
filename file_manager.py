@@ -7,7 +7,7 @@
 import sqlite3
 import argparse
 import os, time
-from common_utils import return_datetime
+from common_utils import return_datetime, get_cam_loc
 from py_logging import get_logger
 
 global logger
@@ -33,7 +33,7 @@ class Publisher(object):
         logger.info("Directories to look: {}".format(directories))
         return directories
 
-    def start_publishing(self, directory_list):
+    def start_publishing(self, directory_list, cred_loc):
         processed_files = []
         for i in range(len(directory_list)):
             processed_files.append(set())
@@ -45,6 +45,7 @@ class Publisher(object):
                 files.sort(key=lambda x: os.path.getmtime(x))
                 cam_no_str = os.path.split(directory)[1]
                 cam_no = int(cam_no_str.replace("cam", ""))
+                cam_loc = get_cam_loc(cred_loc, cam_no)
                 # Keep track of the files already processed
                 new_files = set(files) - processed_files[i]
                 # Add db entry for each new file
@@ -65,8 +66,8 @@ class Publisher(object):
                         else:
                             index = last_row[1] + 1
                         try:
-                            self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path) \
-                                  VALUES ({}, {},'{}');".format(index, cam_no, full_file_path))
+                            self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path,cam_loc) \
+                                  VALUES ({}, {},'{}');".format(index, cam_no, full_file_path, cam_loc))
                             self.main_db.commit()
                         except Exception as e:
                             if "UNIQUE constraint" not in str(e):
@@ -112,6 +113,8 @@ if __name__ == '__main__':
                                    metavar='123', help='Camera recording to publish. Default is 1. Range is 1 to 4')
     file_manager_args.add_argument('-db', '--db_path', action='store', metavar='instance/user_db.db', type=str,
                                    help='path of sqlite db', required=True)
+    file_manager_args.add_argument('-cl', '--cred_loc', action='store', metavar='cam_info.json', type=str,
+                                 help='path of cam info file', required=True)
     file_manager_args.add_argument('-if', '--recordings_dir', action='store', metavar='cam_stream_log/recordings',
                                    type=str,
                                    help='path of recordings directory', required=True)
@@ -125,4 +128,4 @@ if __name__ == '__main__':
 
     pub = Publisher(args.db_path)
     directory_list = pub.get_directories_loc(args.recordings_dir, args.camera_no)
-    pub.start_publishing(directory_list)
+    pub.start_publishing(directory_list, args.cred_loc)

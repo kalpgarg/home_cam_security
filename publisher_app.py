@@ -50,6 +50,7 @@ class Recordings(db.Model):
     index_record = db.Column(db.Integer, unique=True)
     cam_no = db.Column(db.Integer)
     file_path = db.Column(db.String(200), unique=True)
+    cam_loc = db.Column(db.String(20))
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 
@@ -144,7 +145,8 @@ def get_new_data(current_user, last_fetched):
         output.append({
             'index': data.index_record,
             'cam_no': data.cam_no,
-            'file_path': data.file_path
+            'file_path': data.file_path,
+            'cam_loc': data.cam_loc
         })
     last_index = Recordings.query.order_by(Recordings.index_record.desc()).first()
     current_user.update({'last_index_fetched': last_index})
