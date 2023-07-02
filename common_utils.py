@@ -77,5 +77,11 @@ def return_datetime(mode=1, period=None):
 
 def return_start_end_dnt(f_name):
     date_format = '%Y-%m-%d__%H_%M_%S'
-    [start_date, end_date] = f_name.split("_to_")
-    return datetime.strptime(start_date, date_format), datetime.strptime(end_date, date_format)
+    try:
+        [start_date, end_date] = f_name.split("_to_")
+        return datetime.strptime(start_date, date_format), datetime.strptime(end_date, date_format)
+    except Exception as e:
+        start_date = f_name
+        start_dnt = datetime.strptime(start_date, date_format)
+        end_dnt = start_dnt + timedelta(seconds=15)
+        return start_dnt, end_dnt
