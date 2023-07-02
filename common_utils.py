@@ -74,3 +74,8 @@ def return_datetime(mode=1, period=None):
     elif mode == 2:
         delta_time = dnt_pdt + timedelta(seconds=period)
         return delta_time.strftime(date_format)
+
+def return_start_end_dnt(f_name):
+    date_format = '%Y-%m-%d__%H_%M_%S'
+    [start_date, end_date] = f_name.split("_to_")
+    return datetime.strptime(start_date, date_format), datetime.strptime(end_date, date_format)

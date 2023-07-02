@@ -51,6 +51,8 @@ class Recordings(db.Model):
     cam_no = db.Column(db.Integer)
     file_path = db.Column(db.String(200), unique=True)
     cam_loc = db.Column(db.String(20))
+    from_dnt = db.Column(db.DateTime(timezone=True))
+    to_dnt = db.Column(db.DateTime(timezone=True))
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 
@@ -146,7 +148,9 @@ def get_new_data(current_user, last_fetched):
             'index': data.index_record,
             'cam_no': data.cam_no,
             'file_path': data.file_path,
-            'cam_loc': data.cam_loc
+            'cam_loc': data.cam_loc,
+            'from_dnt': data.from_dnt,
+            'to_dnt': data.to_dnt
         })
     last_index = Recordings.query.order_by(Recordings.index_record.desc()).first()
     current_user.last_index_fetched = int(last_index.index_record)

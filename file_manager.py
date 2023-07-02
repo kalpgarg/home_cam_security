@@ -7,7 +7,7 @@
 import sqlite3
 import argparse
 import os, time
-from common_utils import return_datetime, get_cam_loc
+from common_utils import return_datetime, get_cam_loc, return_start_end_dnt
 from py_logging import get_logger
 
 global logger
@@ -57,8 +57,12 @@ class Publisher(object):
                         # time_diff = current_time - modified_time
                         # logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
                         # logger.info("Time diff is: {}".format(time_diff))
+
                         message = f"New file added: {file_path}"
                         logger.info(message)
+                        f_name = (os.path.split(file_path)[1]).split(".")[1]
+                        start_date, end_date = return_start_end_dnt(f_name)
+                        logger.info("start_date: {}. end_date: {}".format(start_date, end_date))
                         full_file_path = os.path.join(base_path, file_path)
                         last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
                         if last_row is None:
@@ -66,8 +70,8 @@ class Publisher(object):
                         else:
                             index = last_row[1] + 1
                         try:
-                            self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path,cam_loc) \
-                                  VALUES ({}, {},'{}','{}');".format(index, cam_no, full_file_path, cam_loc))
+                            self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path,cam_loc,from_dnt,to_dnt) \
+                                  VALUES ({}, {},'{}','{}',{},{});".format(index, cam_no, full_file_path, cam_loc,start_date,end_date))
                             self.main_db.commit()
                         except Exception as e:
                             if "UNIQUE constraint" not in str(e):
