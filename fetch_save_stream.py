@@ -48,6 +48,7 @@ class FetchStream(object):
         motion_detected = True
         prev_capture_running = False
         motion_alarm_cntr = 0
+        quit_ctr = 0
         start_dt = return_datetime()
         video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
         cropped_vertices = get_cropped_params(cred_loc, cam_no, extract_type="polygon")
@@ -98,11 +99,16 @@ class FetchStream(object):
                     # Convert curr_frame to grayscale
                     # Create an empty mask with the same dimensions as the image
                     mask = np.zeros_like(frame)
-                    # todo check below for few times otherwise try to re-establish the connection
                     if mask.shape == ():
                         logger.error("Couldn't get frame. Retrying... ")
                         logger.info("Mask is {}. Its shape is {}. Its size is {} ".format(mask, mask.shape, mask.size))
+                        quit_ctr = quit_ctr + 1
+                        if quit_ctr > 10:
+                            logger.error("Quitting the script as quit cntr has elapsed. Hoping that script_mon will invoke the script again...")
+                            quit()
                         continue
+                    else:
+                        quit_ctr = 0
 
                     # Fill the polygon region in the mask with white (255) pixels
                     cv2.fillPoly(mask, [np.array(cropped_vertices)], (255, 255, 255))
