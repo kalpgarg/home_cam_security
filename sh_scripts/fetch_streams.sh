@@ -12,5 +12,5 @@ OUTPUT_LOG=$REPO_DIR/results/fetch_streams.txt
 RECORDINGS_DIR=$REPO_DIR/cam_stream_log
 python $REPO_DIR/fetch_save_stream.py -cl $REPO_DIR/custom_cam_info.json -l $RECORDINGS_DIR -cn 1 >> $OUTPUT_LOG 2>&1 &
 echo "fetch_save_stream is running in the background!"
-echo "Output is logged in location: $REPO_DIR/results/fetch_streams.txt"
+echo "Output is logged in location: $OUTPUT_LOG"
 
