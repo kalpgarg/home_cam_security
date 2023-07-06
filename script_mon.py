@@ -21,10 +21,10 @@ for script_name in script_names:
 
     if not script_running:
         if script_name == script_names[0]:
-            subprocess.Popen(["sudo", "sh", os.path.join(base_path, "sh_scripts", "fetch_streams.sh")])
+            subprocess.Popen([os.path.join(base_path, "sh_scripts", "fetch_streams.sh")])
             print(f"Restarted script: {script_name}")
         elif script_name == script_names[1]:
-            subprocess.Popen(["sudo", "sh", os.path.join(base_path, "sh_scripts", "file_db_manager.sh")])
+            subprocess.Popen([os.path.join(base_path, "sh_scripts", "file_db_manager.sh")])
             print(f"Restarted script: {script_name}")
         else:
             print(f"Script name: {script_name} doesnt exist. Please check...")
