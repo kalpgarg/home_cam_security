@@ -60,7 +60,7 @@ class Publisher(object):
 
                         message = f"New file added: {file_path}"
                         logger.info(message)
-                        f_name = (os.path.split(file_path)[1]).split(".")[1]
+                        f_name = (os.path.split(file_path)[1]).split(".")[0]
                         start_date, end_date = return_start_end_dnt(f_name)
                         logger.info("start_date: {}. end_date: {}".format(start_date, end_date))
                         full_file_path = os.path.join(base_path, file_path)
@@ -71,7 +71,7 @@ class Publisher(object):
                             index = last_row[1] + 1
                         try:
                             self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path,cam_loc,from_dnt,to_dnt) \
-                                  VALUES ({}, {},'{}','{}',{},{});".format(index, cam_no, full_file_path, cam_loc,start_date,end_date))
+                                  VALUES ({}, {},'{}','{}','{}','{}');".format(index, cam_no, full_file_path, cam_loc,start_date,end_date))
                             self.main_db.commit()
                         except Exception as e:
                             if "UNIQUE constraint" not in str(e):
