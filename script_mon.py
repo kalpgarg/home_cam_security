@@ -12,9 +12,12 @@ script_names = ["fetch_save_stream.py", "file_manager.py"]
 for script_name in script_names:
     script_running = False
     for process in psutil.process_iter():
-        if process.name() == "python" and script_name in process.cmdline():
-            script_running = True
-            break
+        if process.name() == "python":
+            str_cmdline = " ".join(process.cmdline())
+            index = str_cmdline.find(script_name)
+            if index != -1:
+                script_running = True
+                break
 
     if not script_running:
         if script_name == script_names[0]:
