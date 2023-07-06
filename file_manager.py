@@ -87,7 +87,7 @@ class Publisher(object):
                         modified_time = os.path.getmtime(file_path)
                         current_time = time.time()
                         time_diff = current_time - modified_time
-                        if time_diff >= 2 * 24 * 60 * 60:  # if file is older than 2 days, delete it
+                        if time_diff >= 7 * 24 * 60 * 60:  # if file is older than 7 days, delete it
                             try:
                                 # Delete the file and remove its entry
                                 self.main_db.execute("DELETE from recordings where file_path = '{}';".format(os.path.join(base_path, file_path)))
