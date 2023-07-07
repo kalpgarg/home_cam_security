@@ -104,7 +104,8 @@ class FetchStream(object):
                         logger.info("Mask is {}. Its shape is {}. Its size is {} ".format(mask, mask.shape, mask.size))
                         quit_ctr = quit_ctr + 1
                         if quit_ctr > 10:
-                            logger.error("Quitting the script as quit cntr has elapsed. Hoping that script_mon will invoke the script again...")
+                            logger.error("Quitting the script as quit cntr has elapsed. Hoping that script_mon will "
+                                         "invoke the script again...")
                             quit()
                         continue
                     else:

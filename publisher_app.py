@@ -254,7 +254,7 @@ def signup():
 
         return make_response('Successfully registered.', 201)
     else:
-        # returns 202 if user already exists
+        # returns 409 if user already exists
         return make_response('User already exists. Please Log in.', 409)
 
 
