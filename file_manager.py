@@ -9,11 +9,11 @@ import argparse
 import os, time
 from common_utils import return_datetime, get_cam_loc, return_start_end_dnt
 from py_logging import get_logger
+from telegram_bot import TBot
 
 global logger
 
 import pathlib
-
 base_path = pathlib.Path(__file__).parent.resolve()
 
 class Publisher(object):
@@ -64,6 +64,7 @@ class Publisher(object):
                         start_date, end_date = return_start_end_dnt(f_name)
                         logger.info("start_date: {}. end_date: {}".format(start_date, end_date))
                         full_file_path = os.path.join(base_path, file_path)
+                        TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
                         last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
                         if last_row is None:
                             index = 1
@@ -108,7 +109,7 @@ class Publisher(object):
 if __name__ == '__main__':
     file_manager_args = argparse.ArgumentParser(description="Look for new video stream addition and publishes it "
                                                 )
-    file_manager_args.version = "23.03.01"  # yy.mm.vv
+    file_manager_args.version = "23.08.01"  # yy.mm.vv
     file_manager_args.add_argument('-v', '--version', action='version', help="displays the version. Format = yy.mm.v")
     file_manager_args.add_argument('-l', '--log_folder', type=str, metavar='file_manager_log',
                                    default="file_manager_log",

@@ -57,11 +57,18 @@ def get_cam_loc(file_location, cam_no):
         return cred_json["CP_PLUS_DVR"]["cam_loc_details"][cam_type]
 
 
-def get_keys(file_location):
+def get_secret_key(file_location):
     if os.path.exists(file_location):
         cred_json = parse_json(file_location)
         secret_key = cred_json["KEYS"]["SECRET_KEY"]
         return secret_key
+
+def get_tgram_keys(file_location):
+    if os.path.exists(file_location):
+        cred_json = parse_json(file_location)
+        tgram_bot_id = cred_json["KEYS"]["HOME_CAM_BOT_ID"]
+        home_recor_chat_id = cred_json["KEYS"]["HOME_RECORDINGS_CHAT_ID"]
+        return (tgram_bot_id, home_recor_chat_id)
 
 def return_datetime(mode=1, period=None):
     date_format = '%Y-%m-%d__%H_%M_%S'

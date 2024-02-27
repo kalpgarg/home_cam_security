@@ -17,7 +17,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
-from common_utils import get_keys, return_datetime
+from common_utils import get_secret_key, return_datetime
 import pathlib
 
 base_path = pathlib.Path(__file__).parent.resolve()
@@ -35,7 +35,7 @@ db = SQLAlchemy()
 app = Flask(__name__)
 # configuration
 # NEVER HARDCODE YOUR CONFIGURATION IN YOUR CODE
-app.config['SECRET_KEY'] = get_keys(os.path.join(base_path, 'custom_cam_info.json'))
+app.config['SECRET_KEY'] = get_secret_key(os.path.join(base_path, 'custom_cam_info.json'))
 # database name
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user_db.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
