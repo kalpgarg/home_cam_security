@@ -11,8 +11,6 @@ import argparse
 
 import os
 from common_utils import get_tgram_keys, return_datetime
-from py_logging import get_logger
-global logger
 
 class TBot():
     def __init__(self, cred_loc, chat='home_recordings'):
@@ -26,17 +24,17 @@ class TBot():
         self.chat_ID = chat_id
 
     def send_message(self, message):
-        logger.info(f"Message to be sent : {message}")
+        print(f"Message to be sent : {message}")
         send_text = 'https://api.telegram.org/bot' + self.bot_token + '/sendMessage?chat_id=' + self.chat_ID + '&parse_mode=HTML&text=' + message
         response = requests.get(send_text)
-        logger.info(f"Response received : {response.json()}")
+        print(f"Response received : {response.json()}")
         return response.json()
     
     def send_video(self, video_f_path, caption="video"):
         files = {'video': open(f'{video_f_path}', 'rb')}
         response = requests.post('https://api.telegram.org/bot' + self.bot_token + '/sendVideo?chat_id=' + self.chat_ID + '&caption=' + caption, files=files)
         sent = response.json()['ok']
-        logger.info(f"Response received : {sent}")
+        print(f"Response received : {sent}")
         return sent
 
 if __name__ == "__main__":
@@ -53,10 +51,6 @@ if __name__ == "__main__":
 
     args = t_bot_args.parse_args()
 
-    addl_file_loc = os.path.join("telegram_bot", args.log_folder,
-                                 "{}_{}.txt".format("telegram_bot_logs_", return_datetime(mode=1)))
-    logger = get_logger(__name__, addl_file_loc, save_to_file=True)
-    logger.info("Script version is: {}".format(t_bot_args.version))
     # tbot = TBot(bot_token= args.bot_token, chat_ID=args.chat_ID)
     # main(BOT_TOKEN)
     tbot = TBot(args.cred_loc, chat="home_recordings")
