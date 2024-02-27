@@ -10,6 +10,7 @@ import os, time
 from common_utils import return_datetime, get_cam_loc, return_start_end_dnt
 from py_logging import get_logger
 from telegram_bot import TBot
+from datetime import datetime, timedelta
 
 global logger
 
@@ -64,7 +65,12 @@ class Publisher(object):
                         start_date, end_date = return_start_end_dnt(f_name)
                         logger.info("start_date: {}. end_date: {}".format(start_date, end_date))
                         full_file_path = os.path.join(base_path, file_path)
-                        TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
+                        # save the video once end_date + 1sec has passed
+                        while True:
+                            curr_dnt = datetime.now()
+                            if curr_dnt >= end_date + timedelta(seconds=1):
+                                TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
+                                break
                         last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
                         if last_row is None:
                             index = 1
