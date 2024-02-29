@@ -73,6 +73,7 @@ class Publisher(object):
                                     ret_val = TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
                                     if ret_val:
                                         break
+                                    time.sleep(5)
                                 break
                         last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
                         if last_row is None:
