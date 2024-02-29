@@ -32,7 +32,11 @@ class TBot():
     
     def send_video(self, video_f_path, caption="video"):
         files = {'video': open(f'{video_f_path}', 'rb')}
-        response = requests.post('https://api.telegram.org/bot' + self.bot_token + '/sendVideo?chat_id=' + self.chat_ID + '&caption=' + caption, files=files)
+        try:
+            response = requests.post('https://api.telegram.org/bot' + self.bot_token + '/sendVideo?chat_id=' + self.chat_ID + '&caption=' + caption, files=files)
+        except Exception as e:
+            print(f"Error occurred while sending video: {e}.")
+            return False
         sent = response.json()['ok']
         print(f"Response received : {sent}")
         return sent

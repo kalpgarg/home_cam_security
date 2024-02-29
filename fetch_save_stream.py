@@ -135,7 +135,7 @@ class FetchStream(object):
                         logger.info("Motion Alarm counter: {}".format(motion_alarm_cntr))
                     # cv2.imshow("diff", start_frame)
 
-                    if motion_alarm_cntr > 10:
+                    if motion_alarm_cntr > 40:
                         motion_detected = True
                         logger.info("Motion detected")
                         motion_detect_time = time.time()

@@ -69,7 +69,10 @@ class Publisher(object):
                         while True:
                             curr_dnt = datetime.now()
                             if curr_dnt >= end_date + timedelta(seconds=1):
-                                TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
+                                for i in range(1, 5):
+                                    ret_val = TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
+                                    if ret_val:
+                                        break
                                 break
                         last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
                         if last_row is None:
