@@ -69,7 +69,7 @@ class Publisher(object):
                         while True:
                             curr_dnt = datetime.now()
                             if curr_dnt >= end_date + timedelta(seconds=1):
-                                for i in range(1, 5):
+                                for k in range(1, 5):
                                     ret_val = TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
                                     if ret_val:
                                         break
