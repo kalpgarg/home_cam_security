@@ -172,7 +172,7 @@ class FetchStream(object):
                             video_writer.release()
                             # send telegram message
                             data_args = ['sh_scripts/telegram_bot.sh', f'{cred_loc}', f'{new_video_file}', "{}_to_{}".format(start_dt, end_dt)]
-                            subprocess.call(data_args)
+                            subprocess.Popen(data_args)
 
                 else:
                     logger.info("Unable to read from stream.")
