@@ -9,7 +9,7 @@
 import requests
 import argparse
 
-import os
+import os, time
 from common_utils import get_tgram_keys, return_datetime
 
 class TBot():
@@ -50,15 +50,20 @@ if __name__ == "__main__":
                                    default="telegram_bot_log",
                                    help="Location of the log folder")
     t_bot_args.add_argument('-cl', '--cred_loc', action='store', metavar='cam_info.json', type=str,
-                                 help='path of cam info file', required=True)    
+                                 help='path of cam info file', required=True) 
+    t_bot_args.add_argument('-fl', '--file_loc', action='store', metavar='video.mp4', type=str,
+                                 help='path of video file loc', required=True)     
     t_bot_args.add_argument('-msg', '--chat_msg', action='store', type= str, help='Telegram chat message', required=True)
 
     args = t_bot_args.parse_args()
 
     # tbot = TBot(bot_token= args.bot_token, chat_ID=args.chat_ID)
     # main(BOT_TOKEN)
-    tbot = TBot(args.cred_loc, chat="home_recordings")
-    tbot.send_video(video_f_path=args.chat_msg)
+    for k in range(1, 5):
+        ret_val = TBot(cred_loc=args.cred_loc, chat="home_recordings").send_video(video_f_path=args.file_loc, caption= args.chat_msg)
+        if ret_val:
+            break
+        time.sleep(5)
     
 
 

@@ -7,15 +7,12 @@
 import argparse
 import os
 import time
-from datetime import datetime, timedelta
 import numpy as np
-import pytz
 import cv2
 from py_logging import get_logger
 from common_utils import get_cam_info
 from common_utils import get_cropped_params, return_datetime
-from telegram_bot import TBot
-
+import subprocess
 global logger
 
 class FetchStream(object):
@@ -174,12 +171,8 @@ class FetchStream(object):
                             prev_capture_running = False
                             video_writer.release()
                             # send telegram message
-                            time.sleep(1)
-                            for k in range(1, 5):
-                                ret_val = TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=new_video_file, caption= "{}_to_{}".format(start_dt, end_dt))
-                                if ret_val:
-                                    break
-                                time.sleep(5)
+                            data_args = ['sh_scripts/telegram_bot.sh', f'{cred_loc}', f'{new_video_file}', "{}_to_{}".format(start_dt, end_dt)]
+                            subprocess.call(data_args)
 
                 else:
                     logger.info("Unable to read from stream.")
