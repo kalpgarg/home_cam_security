@@ -44,53 +44,54 @@ class Publisher(object):
                 files = os.listdir(directory)
                 files = [os.path.join(directory, f) for f in files]
                 files.sort(key=lambda x: os.path.getmtime(x))
-                cam_no_str = os.path.split(directory)[1]
-                cam_no = int(cam_no_str.replace("cam", ""))
-                cam_loc = get_cam_loc(cred_loc, cam_no)
+                # cam_no_str = os.path.split(directory)[1]
+                # cam_no = int(cam_no_str.replace("cam", ""))
+                # cam_loc = get_cam_loc(cred_loc, cam_no)
                 # Keep track of the files already processed
-                new_files = set(files) - processed_files[i]
-                # Add db entry for each new file
-                for file in new_files:
-                    file_path = file
-                    if file_path.endswith('.mp4'):
-                        # modified_time = os.path.getmtime(file_path)
-                        # current_time = time.time()
-                        # time_diff = current_time - modified_time
-                        # logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
-                        # logger.info("Time diff is: {}".format(time_diff))
+                # new_files = set(files) - processed_files[i]
 
-                        message = f"New file added: {file_path}"
-                        logger.info(message)
-                        f_name = (os.path.split(file_path)[1]).split(".")[0]
-                        start_date, end_date = return_start_end_dnt(f_name)
-                        logger.info("start_date: {}. end_date: {}".format(start_date, end_date))
-                        full_file_path = os.path.join(base_path, file_path)
-                        # save the video once end_date + 1sec has passed
-                        while True:
-                            curr_dnt = datetime.now()
-                            if curr_dnt >= end_date + timedelta(seconds=1):
-                                for k in range(1, 5):
-                                    ret_val = TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
-                                    if ret_val:
-                                        break
-                                    time.sleep(5)
-                                break
-                        last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
-                        if last_row is None:
-                            index = 1
-                        else:
-                            index = last_row[1] + 1
-                        try:
-                            self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path,cam_loc,from_dnt,to_dnt) \
-                                  VALUES ({}, {},'{}','{}','{}','{}');".format(index, cam_no, full_file_path, cam_loc,start_date,end_date))
-                            self.main_db.commit()
-                        except Exception as e:
-                            if "UNIQUE constraint" not in str(e):
-                                raise
-                            else:
-                                logger.info("Entry {} already exist".format(file_path))
-                        processed_files[i].add(file)
-                        # cntr = 0
+                # Add db entry for each new file
+                # for file in new_files:
+                #     file_path = file
+                #     if file_path.endswith('.mp4'):
+                #         # modified_time = os.path.getmtime(file_path)
+                #         # current_time = time.time()
+                #         # time_diff = current_time - modified_time
+                #         # logger.info("file_path: {}. Modified_time: {}".format(file_path, modified_time))
+                #         # logger.info("Time diff is: {}".format(time_diff))
+
+                #         message = f"New file added: {file_path}"
+                #         logger.info(message)
+                #         f_name = (os.path.split(file_path)[1]).split(".")[0]
+                #         start_date, end_date = return_start_end_dnt(f_name)
+                #         logger.info("start_date: {}. end_date: {}".format(start_date, end_date))
+                #         full_file_path = os.path.join(base_path, file_path)
+                #         # save the video once end_date + 1sec has passed
+                #         while True:
+                #             curr_dnt = datetime.now()
+                #             if curr_dnt >= end_date + timedelta(seconds=1):
+                #                 for k in range(1, 5):
+                #                     ret_val = TBot(cred_loc=cred_loc, chat="home_recordings").send_video(video_f_path=full_file_path, caption=f_name)
+                #                     if ret_val:
+                #                         break
+                #                     time.sleep(5)
+                #                 break
+                #         last_row = self.main_db.execute("SELECT * FROM recordings ORDER BY id DESC LIMIT 1;").fetchone()
+                #         if last_row is None:
+                #             index = 1
+                #         else:
+                #             index = last_row[1] + 1
+                #         try:
+                #             self.main_db.execute("INSERT INTO recordings (index_record,cam_no,file_path,cam_loc,from_dnt,to_dnt) \
+                #                   VALUES ({}, {},'{}','{}','{}','{}');".format(index, cam_no, full_file_path, cam_loc,start_date,end_date))
+                #             self.main_db.commit()
+                #         except Exception as e:
+                #             if "UNIQUE constraint" not in str(e):
+                #                 raise
+                #             else:
+                #                 logger.info("Entry {} already exist".format(file_path))
+                #         processed_files[i].add(file)
+                #         # cntr = 0
 
                 for file in files:
                     file_path = os.path.join(directory, file)
@@ -98,7 +99,7 @@ class Publisher(object):
                         modified_time = os.path.getmtime(file_path)
                         current_time = time.time()
                         time_diff = current_time - modified_time
-                        if time_diff >= 7 * 24 * 60 * 60:  # if file is older than 7 days, delete it
+                        if time_diff >= 3 * 24 * 60 * 60:  # if file is older than 3 days, delete it
                             try:
                                 # Delete the file and remove its entry
                                 self.main_db.execute("DELETE from recordings where file_path = '{}';".format(os.path.join(base_path, file_path)))
@@ -111,6 +112,8 @@ class Publisher(object):
                                 logger.error(f"Permission denied: unable to delete file '{file_path}'.")
                             except Exception as e:
                                 logger.error(f"An error occurred while deleting the file: {str(e)}")
+                    # wait for 6hrs before checking new files
+                    time.sleep(6*60*60)
 
     def __del__(self):
         self.main_db.close()
