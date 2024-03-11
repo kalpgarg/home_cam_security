@@ -183,9 +183,9 @@ class FetchStream(object):
 
                 else:
                     logger.info("Unable to read from stream.")
+                    quit()
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cams.release()
-
                 cv2.destroyAllWindows()
                 break
 
