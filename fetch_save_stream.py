@@ -10,6 +10,8 @@ import time
 import numpy as np
 import cv2
 from py_logging import get_logger
+from datetime import datetime
+import datetime as dt
 from common_utils import get_cam_info
 from common_utils import get_cropped_params, return_datetime
 import subprocess
@@ -35,6 +37,13 @@ class FetchStream(object):
         self.width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
         self.height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
         return cam
+    
+    def is_time_between(self, start_time, end_time, check_time):
+        # check_time = datetime.strptime(check_time, "%Y-%m-%d %H:%M:%S").time()
+        if start_time < end_time:
+            return start_time <= check_time <= end_time
+        else:
+            return check_time >= start_time and check_time <= end_time
 
     def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, cred_loc, save_stream=False):
         logger.info("Recording from cam_no: {}".format(cam_no))
@@ -50,6 +59,8 @@ class FetchStream(object):
         start_dt = return_datetime()
         video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
         cropped_vertices = get_cropped_params(cred_loc, cam_no, extract_type="polygon")
+        cntr_threshold = 30
+        motion_threshold = 50000
         # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
 
         if save_stream:
@@ -68,6 +79,11 @@ class FetchStream(object):
             success, current_screen = cams.read()
             frame = current_screen
 
+            if self.is_time_between(dt.time(6, 00), dt.time(18, 00), datetime.now().time()):
+                # for morning, cntr_threshold of 30 works fine. 
+                cntr_threshold = 30
+            else:
+                cntr_threshold = 40
             # Full_frame = cv2.resize(self.main_screen, dim, interpolation=cv2.INTER_AREA)
             cTime = time.time()
             fps = 1 / (cTime - pTime)
@@ -122,7 +138,7 @@ class FetchStream(object):
                     threshold = cv2.threshold(difference, 25, 255, cv2.THRESH_BINARY)[1]
                     start_frame = curr_bw_frame
 
-                    if threshold.sum() > 50000:
+                    if threshold.sum() > motion_threshold:
                         # 2,00,00,000 is the max value
                         logger.info("Threshold sum is: {}".format(threshold.sum()))
                         motion_alarm_cntr += 1
@@ -133,7 +149,7 @@ class FetchStream(object):
                         logger.info("Motion Alarm counter: {}".format(motion_alarm_cntr))
                     # cv2.imshow("diff", start_frame)
 
-                    if motion_alarm_cntr > 40:
+                    if motion_alarm_cntr > cntr_threshold:
                         motion_detected = True
                         logger.info("Motion detected")
                         motion_detect_time = time.time()
