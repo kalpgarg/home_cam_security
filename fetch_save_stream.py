@@ -172,6 +172,9 @@ class FetchStream(object):
                                 else:
                                     # Other errors, handle or re-raise as needed
                                     raise e
+                        if retry_count >= retry_limit:
+                            logger.error("Codec mpeg4 error retry limit exhausted.. Quitting the script..")
+                            quit()
                         motion_alarm_cntr = 0
                     else:
                         motion_detected = False
