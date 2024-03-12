@@ -49,7 +49,6 @@ class FetchStream(object):
         logger.info("Recording from cam_no: {}".format(cam_no))
         pTime = 0
         retry_limit = 10
-        retry_count = 0
         motion_detect_time = time.time()
         upd_start_frame = True
         motion_detected = True
@@ -78,7 +77,7 @@ class FetchStream(object):
         while True:
             success, current_screen = cams.read()
             frame = current_screen
-
+            retry_count = 0
             if self.is_time_between(dt.time(6, 00), dt.time(18, 00), datetime.now().time()):
                 # for morning, cntr_threshold of 30 works fine. 
                 cntr_threshold = 30
@@ -164,7 +163,7 @@ class FetchStream(object):
                                 video_writer = cv2.VideoWriter(new_video_file, video_codec, self.fps,
                                                                (self.width, self.height), isColor=True)
                                 break
-                            except cv2.error as e:
+                            except Exception as e:
                                 print(str(e))
                                 if 'codec mpeg4' in str(e):
                                     # Retry if timebase error occurs
