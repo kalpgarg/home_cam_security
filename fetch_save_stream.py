@@ -164,7 +164,7 @@ class FetchStream(object):
                                                                (self.width, self.height), isColor=True)
                                 break
                             except Exception as e:
-                                print(str(e))
+                                print("Exception occured: ", str(e))
                                 if 'codec mpeg4' in str(e):
                                     # Retry if timebase error occurs
                                     retry_count += 1
