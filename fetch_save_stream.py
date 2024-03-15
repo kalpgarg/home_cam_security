@@ -187,6 +187,7 @@ class FetchStream(object):
                                 video_writer.write(frame)
                         else:
                             prev_capture_running = False
+                            logger.info("Recording saved...")
                             video_writer.release()
                             # send telegram message
                             data_args = ['sh_scripts/telegram_bot.sh', f'{cred_loc}', f'{new_video_file}', "{}_to_{}".format(start_dt, end_dt)]
