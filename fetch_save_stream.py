@@ -15,6 +15,7 @@ import datetime as dt
 from common_utils import get_cam_info
 from common_utils import get_cropped_params, return_datetime
 import subprocess
+from wurlitzer import pipes
 global logger
 
 class FetchStream(object):
@@ -158,20 +159,19 @@ class FetchStream(object):
                         logger.info("Saving stream to loc: {}".format(new_video_file))
                         # retry this till retry limit
                         while retry_count < retry_limit:
-                            try:
+                            with pipes() as (out, err):
                                 # Attempt to create the video writer
                                 video_writer = cv2.VideoWriter(new_video_file, video_codec, self.fps,
                                                                (self.width, self.height), isColor=True)
-                                break
-                            except Exception as e:
-                                print("Exception occured: ", str(e))
-                                if 'codec mpeg4' in str(e):
-                                    # Retry if timebase error occurs
-                                    retry_count += 1
-                                    print(f"Timebase error occurred. Retrying... Attempt {retry_count}/{retry_limit}")
-                                else:
-                                    # Other errors, handle or re-raise as needed
-                                    raise e
+                            print(f"stderr: {err.read()}")
+                                # print("Exception occured: ", str(e))
+                                # if 'codec mpeg4' in str(e):
+                                #     # Retry if timebase error occurs
+                                #     retry_count += 1
+                                #     print(f"Timebase error occurred. Retrying... Attempt {retry_count}/{retry_limit}")
+                                # else:
+                                #     # Other errors, handle or re-raise as needed
+                                #     raise e
                         if retry_count >= retry_limit:
                             logger.error("Codec mpeg4 error retry limit exhausted.. Quitting the script..")
                             quit()
