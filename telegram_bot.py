@@ -10,7 +10,7 @@ import requests
 import argparse
 
 import os, time
-from common_utils import get_tgram_keys, return_datetime
+from common_utils import get_tgram_keys, write_to_file, return_basepath
 
 class TBot():
     def __init__(self, cred_loc, chat='home_recordings'):
@@ -31,7 +31,11 @@ class TBot():
         return response.json()
     
     def send_video(self, video_f_path, caption="video"):
-        files = {'video': open(f'{video_f_path}', 'rb')}
+        try:
+            files = {'video': open(f'{video_f_path}', 'rb')}
+            write_to_file(os.path.join(return_basepath(), "file_present.txt"), "Yes")
+        except FileNotFoundError as e:
+            write_to_file(os.path.join(return_basepath(), "file_present.txt"), "No")
         try:
             response = requests.post('https://api.telegram.org/bot' + self.bot_token + '/sendVideo?chat_id=' + self.chat_ID + '&caption=' + caption, files=files)
         except Exception as e:

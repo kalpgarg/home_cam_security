@@ -1,6 +1,6 @@
 import os, json
 from datetime import datetime, timedelta
-import pytz
+import pytz, subprocess
 
 def parse_json(file):
     with open(file) as f:
@@ -13,6 +13,20 @@ def parse_json(file):
     cred_json = json.loads(cred_json)
     return cred_json
 
+def return_basepath():
+    '''
+    Will return git top level path if exists otherwise location of this script
+    '''
+    try:
+        result = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True)
+        git_root_path = result.stdout.strip()
+        # print("Git repository root path:", git_root_path)
+        return git_root_path
+    except subprocess.CalledProcessError:
+        print("Not a Git repository or an error occurred. Returning path of this script")
+        script_path = os.path.dirname(os.path.abspath(__file__))
+        print(f"Path of this script is: {script_path}")
+        return script_path
 
 def get_cam_info(file_location):
     if os.path.exists(file_location):
@@ -92,3 +106,11 @@ def return_start_end_dnt(f_name):
         start_dnt = datetime.strptime(start_date, date_format)
         end_dnt = start_dnt + timedelta(seconds=15)
         return start_dnt, end_dnt
+    
+def write_to_file(fpath, write_msg):
+    with open(fpath, "w") as f1:
+        f1.write(write_msg)
+    
+def read_file(fpath):
+    with open(fpath, "r") as f1:
+        return f1.read()
