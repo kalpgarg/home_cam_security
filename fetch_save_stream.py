@@ -81,8 +81,10 @@ class FetchStream(object):
             if self.is_time_between(dt.time(6, 00), dt.time(18, 00), datetime.now().time()):
                 # for morning, cntr_threshold of 30 works fine. 
                 cntr_threshold = 30
+                motion_threshold = 150000
             else:
                 cntr_threshold = 40
+                motion_threshold = 50000
             # Full_frame = cv2.resize(self.main_screen, dim, interpolation=cv2.INTER_AREA)
             cTime = time.time()
             fps = 1 / (cTime - pTime)
