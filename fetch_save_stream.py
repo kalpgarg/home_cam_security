@@ -13,7 +13,7 @@ from py_logging import get_logger
 from datetime import datetime
 import datetime as dt
 from common_utils import get_cam_info
-from common_utils import get_cropped_params, return_datetime, read_file,return_basepath
+from common_utils import get_cropped_params, return_datetime, read_file,return_basepath, write_to_file
 import subprocess
 global logger
 
@@ -74,6 +74,9 @@ class FetchStream(object):
             video_writer = cv2.VideoWriter(
                 old_video_file, video_codec, self.fps, (self.width, self.height))
 
+            # write file present at the beginning so that script doesn't quit endlessly. 
+            write_to_file(os.path.join(return_basepath(), "file_present.txt"), "Yes")
+        
         while True:
             success, current_screen = cams.read()
             frame = current_screen
