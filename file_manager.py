@@ -112,8 +112,8 @@ class Publisher(object):
                                 logger.error(f"Permission denied: unable to delete file '{file_path}'.")
                             except Exception as e:
                                 logger.error(f"An error occurred while deleting the file: {str(e)}")
-                    # wait for 6hrs before checking new files
-                    time.sleep(6*60*60)
+            # wait for 6hrs before new iteration
+            time.sleep(6*60*60)
 
     def __del__(self):
         self.main_db.close()

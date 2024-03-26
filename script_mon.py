@@ -14,12 +14,15 @@ while True:
     for script_name in script_names:
         script_running = False
         for process in psutil.process_iter():
-            if process.name() == "python":
-                str_cmdline = " ".join(process.cmdline())
-                index = str_cmdline.find(script_name)
-                if index != -1:
-                    script_running = True
-                    break
+            try:
+                if process.name() == "python":
+                    str_cmdline = " ".join(process.cmdline())
+                    index = str_cmdline.find(script_name)
+                    if index != -1:
+                        script_running = True
+                        break
+            except Exception as e:
+                print("Exception occured: ", e)
 
         if not script_running:
             if script_name == script_names[0]:
