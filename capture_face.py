@@ -114,7 +114,7 @@ if __name__ == '__main__':
                                    metavar='10', help='Number of captures. Default is 10.')
     capture_face_args.add_argument('-t', '--time_bw_capture', action='store', type=int, default=1,
                                    metavar='1',
-                                   help='Time(in milliseconds) between two captures. Not used for pre-recorded videos')
+                                   help='Time(in seconds) between two captures. Not used for pre-recorded videos')
     capture_face_args.add_argument('-p', '--person_name', action='store', type=str, required=True,
                                    metavar='person1', help='person name')
     capture_face_args.add_argument('-d', '--is_dir', action='store', type=bool, default=False, metavar='False',

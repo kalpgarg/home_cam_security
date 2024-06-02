@@ -123,6 +123,7 @@ class ImageCropper:
         self.end_x, self.end_y = None, None
 
 if __name__ == "__main__":
-    image_path = "/Users/kgarg/extras/home_cam_security/input/input_db/kalp/kalp0_b8a02c4a-c224-11ed-80d9-acde48001122.jpg"
+    image_path = "/Users/kgarg/extras/home_cam_security/cam_stream_log/input_db/cam2/2.jpg"
+    # image_path = "/Users/kgarg/extras/home_cam_security/input/input_db/kalp/kalp0_b8a02c4a-c224-11ed-80d9-acde48001122.jpg"
     cropper = ImageCropper(image_path, extraction_type="polygon")  #extraction_type="rectangle"
     cropper.run()

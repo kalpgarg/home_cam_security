@@ -13,7 +13,7 @@ from py_logging import get_logger
 from datetime import datetime
 import datetime as dt
 from common_utils import get_cam_info
-from common_utils import get_cropped_params, return_datetime, read_file,return_basepath, write_to_file
+from common_utils import get_cropped_params, return_datetime, read_file,return_basepath, write_to_file, get_cam_loc
 import subprocess
 global logger
 
@@ -44,6 +44,60 @@ class FetchStream(object):
             return start_time <= check_time <= end_time
         else:
             return check_time >= start_time and check_time <= end_time
+        
+    def create_dir(self, log_folder, name):
+        if not os.path.exists(os.path.join(log_folder, "input_db", str(name))):
+            os.makedirs(os.path.join(log_folder, "input_db", str(name)))
+
+        return os.path.join(log_folder, "input_db", str(name))
+        
+    def capture_sample_recording(self, cams, log_folder, cam_no, sleep_t=1000, total_capture_cnt=10):
+        logger.info("Recording from cam_no: {}".format(cam_no))
+
+        capture_from_stream = False
+        sleep_time = (sleep_t) / 1000
+        cam = cams
+        total_frames = cam.get(cv2.CAP_PROP_FRAME_COUNT)
+        fps = cam.get(cv2.CAP_PROP_FPS)
+        logger.info("Total frames : {}. FPS : {}".format(total_frames, fps))
+        if total_frames < 0:
+            capture_from_stream = True
+        if not capture_from_stream:
+            if fps == 0:
+                logger.error("FPS can't be zero. PLS CHECK...")
+                return 0
+            total_time = (total_frames / fps)
+            if total_capture_cnt == 0:
+                logger.error("Total capture cnt can't be zero. PLS CHECK... ")
+                return 0
+            sleep_time = round((total_time / total_capture_cnt), 2)
+        
+        dir_path = self.create_dir(log_folder, f"cam{cam_no}")
+        logger.info("Directory path : {}".format(dir_path))
+        # segmentor = SelfiSegmentation()
+        logger.info("Time between capture is : {} s".format(sleep_time))
+        for i in range(total_capture_cnt):
+            if cam.isOpened():
+                if not capture_from_stream:
+                    t_msec = i * sleep_time * 1000
+                    cam.set(cv2.CAP_PROP_POS_MSEC, t_msec)
+                else:
+                    time.sleep(sleep_time)
+                success, img = cam.read()
+                # start_time = time.time()
+                if success:
+                    # bg_rem_img = segmentor.removeBG(img, (255, 255, 255), threshold=0.1)
+                    img_path = os.path.join(dir_path, "{}".format(i) + ".jpg")
+                    cv2.imwrite(img_path, img)
+                    logger.info("File {} successfully written".format(img_path))
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
+            else:
+                break
+        cam.release()
+        cv2.destroyAllWindows()
+
+
 
     def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, cred_loc, save_stream=False):
         logger.info("Recording from cam_no: {}".format(cam_no))
@@ -60,6 +114,7 @@ class FetchStream(object):
         cropped_vertices = get_cropped_params(cred_loc, cam_no, extract_type="polygon")
         cntr_threshold = 30
         motion_threshold = 50000
+        cam_name = get_cam_loc(file_location=cred_loc, cam_no=cam_no)
         # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
 
         if save_stream:
@@ -196,7 +251,7 @@ class FetchStream(object):
                             logger.info("Recording saved...")
                             video_writer.release()
                             # send telegram message
-                            data_args = ['sh_scripts/telegram_bot.sh', f'{cred_loc}', f'{new_video_file}', "{}_to_{}".format(start_dt, end_dt)]
+                            data_args = ['sh_scripts/telegram_bot.sh', f'{cred_loc}', f'{new_video_file}', "{}_{}_to_{}".format(cam_name, start_dt, end_dt)]
                             subprocess.Popen(data_args)
 
                 else:
@@ -238,4 +293,5 @@ if __name__ == '__main__':
     cam_object = FetchStream(u_name, pass_w, IP, port_no, cam_wid, cam_hei)
     cam_no = args.camera_no
     cams = cam_object.connect_camera(cam_no)
+    # cam_object.capture_sample_recording(cams, args.log_folder, args.camera_no)
     cam_object.display_save_live_stream(cams, args.log_folder, args.time_period, args.camera_no, args.motion_detection, args.cred_loc, save_stream=True)
