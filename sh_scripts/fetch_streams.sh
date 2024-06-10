@@ -13,6 +13,10 @@ echo "Running script for fetching from camera no 1"
 python $REPO_DIR/fetch_save_stream.py -cl $REPO_DIR/custom_cam_info.json -l $RECORDINGS_DIR -cn 1 >> $OUTPUT_LOG 2>&1 &
 echo "Running script for fetching from camera no 2"
 python $REPO_DIR/fetch_save_stream.py -cl $REPO_DIR/custom_cam_info.json -l $RECORDINGS_DIR -cn 2 >> $OUTPUT_LOG 2>&1 &
+echo "Running script for fetching from camera no 3"
+python $REPO_DIR/fetch_save_stream.py -cl $REPO_DIR/custom_cam_info.json -l $RECORDINGS_DIR -cn 3 >> $OUTPUT_LOG 2>&1 &
+echo "Running script for fetching from camera no 4"
+python $REPO_DIR/fetch_save_stream.py -cl $REPO_DIR/custom_cam_info.json -l $RECORDINGS_DIR -cn 4 >> $OUTPUT_LOG 2>&1 &
 echo "fetch_save_stream is running in the background!"
 echo "Output is logged in location: $OUTPUT_LOG"
 
