@@ -13,6 +13,9 @@ LOG_DIR=$REPO_DIR/cam_stream_log
 RECORDINGS_DIR=$REPO_DIR/cam_stream_log/recordings
 DB_PATH=$REPO_DIR/instance/user_db.db
 python $REPO_DIR/file_manager.py -cl $REPO_DIR/custom_cam_info.json -db $DB_PATH -if $RECORDINGS_DIR -l $LOG_DIR -cn 1 >> $OUTPUT_LOG 2>&1 &
+python $REPO_DIR/file_manager.py -cl $REPO_DIR/custom_cam_info.json -db $DB_PATH -if $RECORDINGS_DIR -l $LOG_DIR -cn 2 >> $OUTPUT_LOG 2>&1 &
+python $REPO_DIR/file_manager.py -cl $REPO_DIR/custom_cam_info.json -db $DB_PATH -if $RECORDINGS_DIR -l $LOG_DIR -cn 3 >> $OUTPUT_LOG 2>&1 &
+python $REPO_DIR/file_manager.py -cl $REPO_DIR/custom_cam_info.json -db $DB_PATH -if $RECORDINGS_DIR -l $LOG_DIR -cn 4 >> $OUTPUT_LOG 2>&1 &
 echo "File manager is running in the background!"
 echo "Output is logged in location: $OUTPUT_LOG"
 
