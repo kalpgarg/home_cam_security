@@ -59,16 +59,16 @@ class FetchStream(object):
         cam = cams
         total_frames = cam.get(cv2.CAP_PROP_FRAME_COUNT)
         fps = cam.get(cv2.CAP_PROP_FPS)
-        logger.info("Total frames : {}. FPS : {}".format(total_frames, fps))
+        logger.info("cam_no: {}. Total frames : {}. FPS : {}".format(cam_no, total_frames, fps))
         if total_frames < 0:
             capture_from_stream = True
         if not capture_from_stream:
             if fps == 0:
-                logger.error("FPS can't be zero. PLS CHECK...")
+                logger.error(f"cam_no: {cam_no}. FPS can't be zero. PLS CHECK...")
                 return 0
             total_time = (total_frames / fps)
             if total_capture_cnt == 0:
-                logger.error("Total capture cnt can't be zero. PLS CHECK... ")
+                logger.error(f"cam_no: {cam_no}.Total capture cnt can't be zero. PLS CHECK... ")
                 return 0
             sleep_time = round((total_time / total_capture_cnt), 2)
         
@@ -173,11 +173,11 @@ class FetchStream(object):
                     # Create an empty mask with the same dimensions as the image
                     mask = np.zeros_like(frame)
                     if mask.shape == ():
-                        logger.error("Couldn't get frame. Retrying... ")
-                        logger.info("Mask is {}. Its shape is {}. Its size is {} ".format(mask, mask.shape, mask.size))
+                        logger.error(f"cam_no: {cam_no}.Couldn't get frame. Retrying... ")
+                        logger.info("cam_no: {}. Mask is {}. Its shape is {}. Its size is {} ".format(cam_no, mask, mask.shape, mask.size))
                         quit_ctr = quit_ctr + 1
                         if quit_ctr > 10:
-                            logger.error("Quitting the script as quit cntr has elapsed. Hoping that script_mon will "
+                            logger.error(f"cam_no: {cam_no}.Quitting the script as quit cntr has elapsed. Hoping that script_mon will "
                                          "invoke the script again...")
                             quit()
                         continue
@@ -199,23 +199,23 @@ class FetchStream(object):
 
                     if threshold.sum() > motion_threshold:
                         # 2,00,00,000 is the max value
-                        logger.info("Threshold sum is: {}".format(threshold.sum()))
+                        logger.info("cam_no: {}. Threshold sum is: {}".format(cam_no, threshold.sum()))
                         motion_alarm_cntr += 1
                     else:
                         if motion_alarm_cntr > 0:
                             motion_alarm_cntr -= 1
                     if motion_alarm_cntr > 0:
-                        logger.info("Motion Alarm counter: {}".format(motion_alarm_cntr))
+                        logger.info("cam_no: {}. Motion Alarm counter: {}".format(cam_no, motion_alarm_cntr))
                     # cv2.imshow("diff", start_frame)
 
                     if motion_alarm_cntr > cntr_threshold:
                         motion_detected = True
-                        logger.info("Motion detected")
+                        logger.info(f"cam_no: {cam_no}. Motion detected")
                         motion_detect_time = time.time()
                         start_dt = return_datetime()
                         end_dt = return_datetime(mode=2, period=period)
                         new_video_file = os.path.join(recordings_dir, "{}_to_{}".format(start_dt, end_dt) + ".mp4")
-                        logger.info("Saving stream to loc: {}".format(new_video_file))
+                        logger.info("cam_no:{}. Saving stream to loc: {}".format(cam_no, new_video_file))
                         # retry this till retry limit
                         while retry_count < retry_limit:
                             try:
@@ -228,13 +228,13 @@ class FetchStream(object):
                                 if 'codec mpeg4' in str(e):
                                     # Retry if timebase error occurs
                                     retry_count += 1
-                                    print(f"Timebase error occurred. Retrying... Attempt {retry_count}/{retry_limit}")
+                                    print(f"cam_no: {cam_no}.Timebase error occurred. Retrying... Attempt {retry_count}/{retry_limit}")
                                 else:
                                     # Other errors, handle or re-raise as needed
                                     raise e
                         
                         if retry_count >= retry_limit:
-                            logger.error("Codec mpeg4 error retry limit exhausted.. Quitting the script..")
+                            logger.error(f"cam_no: {cam_no}.Codec mpeg4 error retry limit exhausted.. Quitting the script..")
                             quit()
                         motion_alarm_cntr = 0
                     else:
@@ -248,18 +248,18 @@ class FetchStream(object):
                                 video_writer.write(frame)
                         else:
                             prev_capture_running = False
-                            logger.info("Recording saved...")
+                            logger.info(f"cam_no: {cam_no}. Recording saved...")
                             video_writer.release()
                             # send telegram message
                             data_args = ['sh_scripts/telegram_bot.sh', f'{cred_loc}', f'{new_video_file}', "{}_{}_to_{}".format(cam_name, start_dt, end_dt)]
                             subprocess.Popen(data_args)
 
                 else:
-                    logger.info("Unable to read from stream.")
+                    logger.info(f"cam_no: {cam_no}. Unable to read from stream.")
                     quit()
                 file_present = read_file(fpath=os.path.join(os.path.join(return_basepath(), "file_present.txt")))
                 if file_present == "No":
-                    logger.error("File not present.. Quitting the script..")
+                    logger.error(f"cam_no: {cam_no}. File not present.. Quitting the script..")
                     quit()
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
