@@ -17,6 +17,7 @@ while True:
             try:
                 if process.name() == "python":
                     str_cmdline = " ".join(process.cmdline())
+                    print(str_cmdline)
                     index = str_cmdline.find(script_name)
                     if index != -1:
                         script_running = True
