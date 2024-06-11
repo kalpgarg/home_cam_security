@@ -471,7 +471,7 @@ if __name__ == "__main__":
 
     addl_file_loc = os.path.join("face_detect", args.log_folder,
                                  "{}_{}.txt".format("face_detect_", return_datetime(mode=1)))
-    logger = get_logger(__name__, addl_file_loc, save_to_file=True)
+    logger = get_logger(__name__, addl_file_loc, save_to_file=False)
     logger.info("Script version is: {}".format(face_detect_args.version))
 
     if args.subparser_name == func_list[0]:

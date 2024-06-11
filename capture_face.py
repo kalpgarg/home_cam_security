@@ -127,8 +127,8 @@ if __name__ == '__main__':
     args = capture_face_args.parse_args()
 
     addl_file_loc = os.path.join("capture_face", args.log_folder,
-                                 "{}_{}.txt".format("cam_stream_logs_", return_datetime(mode=1)))
-    logger = get_logger(__name__, addl_file_loc, save_to_file=True)
+                                 "{}_{}.txt".format("capture_face_logs_", return_datetime(mode=1)))
+    logger = get_logger(__name__, addl_file_loc, save_to_file=False)
     logger.info("Script version is: {}".format(capture_face_args.version))
 
     if args.source == "webcam":

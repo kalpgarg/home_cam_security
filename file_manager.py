@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
     addl_file_loc = os.path.join("file_manager", args.log_folder,
                                  "{}_{}.txt".format("file_manager_logs_", return_datetime(mode=1)))
-    logger = get_logger(__name__, addl_file_loc, save_to_file=True)
+    logger = get_logger(__name__, addl_file_loc, save_to_file=False)
     logger.info("Script version is: {}".format(file_manager_args.version))
 
     pub = Publisher(args.db_path)

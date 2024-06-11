@@ -270,7 +270,7 @@ if __name__ == '__main__':
 
     addl_file_loc = os.path.join("publisher", args.log_folder,
                                  "{}_{}.txt".format("publisher_logs_", return_datetime(mode=1)))
-    logger = get_logger(__name__, addl_file_loc, save_to_file=True)
+    logger = get_logger(__name__, addl_file_loc, save_to_file=False)
     logger.info("Script version is: {}".format(publisher_args.version))
 
     dev_environ = False

@@ -286,7 +286,7 @@ if __name__ == '__main__':
 
     addl_file_loc = os.path.join("cam_stream", args.log_folder,
                                  "{}_{}.txt".format("cam_stream_logs_", return_datetime(mode=1)))
-    logger = get_logger(__name__, addl_file_loc, save_to_file=True)
+    logger = get_logger(__name__, addl_file_loc, save_to_file=False)
     logger.info("Script version is: {}".format(cam_stream_args.version))
     [u_name, pass_w, IP, port_no, cam_wid, cam_hei] = get_cam_info(args.cred_loc)
 
