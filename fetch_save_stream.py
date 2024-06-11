@@ -139,7 +139,7 @@ class FetchStream(object):
             if self.is_time_between(dt.time(6, 00), dt.time(18, 00), datetime.now().time()):
                 # for morning, cntr_threshold of 30 works fine. 
                 cntr_threshold = 30
-                motion_threshold = 150000
+                motion_threshold = 200000
             else:
                 cntr_threshold = 40
                 motion_threshold = 50000
