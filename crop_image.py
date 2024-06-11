@@ -47,6 +47,7 @@ class ImageCropper:
     def mouse_click(self, event, x, y, flags, param):
 
         if event == cv2.EVENT_LBUTTONDOWN:
+            print(f"Mouse click recorded. x:{x}. y:{y}")
             self.vertices.append((x, y))
             self.drawing = True
 
@@ -101,6 +102,7 @@ class ImageCropper:
         cv2.destroyAllWindows()
 
     def on_mouse_press(self, event):
+        
         self.start_x, self.start_y = event.x, event.y
 
     def on_mouse_drag(self, event):
@@ -123,7 +125,7 @@ class ImageCropper:
         self.end_x, self.end_y = None, None
 
 if __name__ == "__main__":
-    image_path = "/Users/kgarg/extras/home_cam_security/cam_stream_log/input_db/cam4/9.jpg"
+    image_path = "/Users/kgarg/extras/home_cam_security/cam_stream_log/input_db/cam3/9.jpg"
     # image_path = "/Users/kgarg/extras/home_cam_security/input/input_db/kalp/kalp0_b8a02c4a-c224-11ed-80d9-acde48001122.jpg"
     cropper = ImageCropper(image_path, extraction_type="polygon")  #extraction_type="rectangle"
     cropper.run()
