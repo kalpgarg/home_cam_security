@@ -13,7 +13,7 @@ from py_logging import get_logger
 from datetime import datetime
 import datetime as dt
 from common_utils import get_cam_info
-from common_utils import get_cropped_params, return_datetime, read_file,return_basepath, write_to_file, get_cam_loc
+from common_utils import get_cropped_params, return_datetime, read_file,return_basepath, write_to_file, get_cam_loc, get_motion_config
 import subprocess
 global logger
 
@@ -112,8 +112,11 @@ class FetchStream(object):
         start_dt = return_datetime()
         video_codec = cv2.VideoWriter_fourcc('m','p','4','v')
         cropped_vertices = get_cropped_params(cred_loc, cam_no, extract_type="polygon")
-        cntr_threshold = 30
-        motion_threshold = 50000
+
+        cntr_threshold_day = get_motion_config(file_location=cred_loc, cam_no=cam_no, type=False, day=True)
+        motion_threshold_day = get_motion_config(file_location=cred_loc, cam_no=cam_no, type=True, day=True)
+        cntr_threshold_night = get_motion_config(file_location=cred_loc, cam_no=cam_no, type=False, day=False)
+        motion_threshold_night = get_motion_config(file_location=cred_loc, cam_no=cam_no, type=True, day=False)
         cam_name = get_cam_loc(file_location=cred_loc, cam_no=cam_no)
         # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
 
@@ -138,11 +141,11 @@ class FetchStream(object):
             retry_count = 0
             if self.is_time_between(dt.time(6, 00), dt.time(18, 00), datetime.now().time()):
                 # for morning, cntr_threshold of 30 works fine. 
-                cntr_threshold = 30
-                motion_threshold = 200000
+                cntr_threshold = cntr_threshold_day
+                motion_threshold = motion_threshold_day
             else:
-                cntr_threshold = 40
-                motion_threshold = 50000
+                cntr_threshold = cntr_threshold_night
+                motion_threshold = motion_threshold_night
             # Full_frame = cv2.resize(self.main_screen, dim, interpolation=cv2.INTER_AREA)
             cTime = time.time()
             fps = 1 / (cTime - pTime)

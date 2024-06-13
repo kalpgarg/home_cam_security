@@ -70,6 +70,22 @@ def get_cam_loc(file_location, cam_no):
         cam_type = "cam{}".format(cam_no)
         return cred_json["CP_PLUS_DVR"]["cam_loc_details"][cam_type]
 
+def get_motion_config(file_location, cam_no, type:bool=False, day:bool=False):
+    if os.path.exists(file_location):
+        cred_json = parse_json(file_location)
+        cam_type = "cam{}".format(cam_no)
+        if type:
+            # motion_threshold
+            if day:
+                return cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["motion_threshold"]["day"]
+            else:
+                return cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["motion_threshold"]["night"]
+        else:
+            #cntr_threshold
+            if day:
+                return cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["cntr_threshold"]["day"]
+            else:
+                return cred_json["CP_PLUS_DVR"]["crop_details"][cam_type]["cntr_threshold"]["night"]
 
 def get_secret_key(file_location):
     if os.path.exists(file_location):
