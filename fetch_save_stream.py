@@ -117,6 +117,7 @@ class FetchStream(object):
         motion_threshold_day = get_motion_config(file_location=cred_loc, cam_no=cam_no, type=True, day=True)
         cntr_threshold_night = get_motion_config(file_location=cred_loc, cam_no=cam_no, type=False, day=False)
         motion_threshold_night = get_motion_config(file_location=cred_loc, cam_no=cam_no, type=True, day=False)
+        logger.info(f"cam_no: {cam_no}. cntr_threshold_day: {cntr_threshold_day}. motion_threshold_day: {motion_threshold_day}. cntr_threshold_night:{cntr_threshold_night}. motion_threshold_night:{motion_threshold_night}")
         cam_name = get_cam_loc(file_location=cred_loc, cam_no=cam_no)
         # video_codec = cv2.VideoWriter_fourcc('a', 'v', 'c', '1')
 
