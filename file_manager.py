@@ -34,7 +34,7 @@ class Publisher(object):
         logger.info("Directories to look: {}".format(directories))
         return directories
 
-    def clean_logs(self, file_path, days_to_keep=3):
+    def clean_logs(self, file_path, days_to_keep=1):
         logger.info(f"Looking to clean up streams log file: {file_path}")
         try:
             # Calculate the cutoff timestamp
