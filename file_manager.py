@@ -34,7 +34,40 @@ class Publisher(object):
         logger.info("Directories to look: {}".format(directories))
         return directories
 
-    def start_publishing(self, directory_list, cred_loc):
+    def clean_logs(self, file_path, days_to_keep=3):
+        logger.info(f"Looking to clean up streams log file: {file_path}")
+        try:
+            # Calculate the cutoff timestamp
+            now = datetime.now()
+            cutoff = now - timedelta(days=days_to_keep)
+
+            # Read the log file and filter lines
+            with open(file_path, 'r') as f:
+                lines = f.readlines()
+            
+            # Parse and retain logs within the cutoff
+            updated_lines = []
+            for line in lines:
+                try:
+                    # Extract timestamp
+                    timestamp_str = line.split(']')[0][1:]
+                    log_time = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f %Z")
+                    
+                    # Keep log if it's newer than the cutoff
+                    if log_time >= cutoff:
+                        updated_lines.append(line)
+                except (IndexError, ValueError):
+                    # Skip lines that don't match the expected format
+                    updated_lines.append(line)
+
+            # Rewrite the log file with updated content
+            with open(file_path, 'w') as f:
+                f.writelines(updated_lines)
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    def start_publishing(self, directory_list, cred_loc, streams_log):
         processed_files = []
         for i in range(len(directory_list)):
             processed_files.append(set())
@@ -112,6 +145,7 @@ class Publisher(object):
                                 logger.error(f"Permission denied: unable to delete file '{file_path}'.")
                             except Exception as e:
                                 logger.error(f"An error occurred while deleting the file: {str(e)}")
+            self.clean_logs(file_path=streams_log)
             # wait for 6hrs before new iteration
             time.sleep(6*60*60)
 
@@ -144,6 +178,7 @@ if __name__ == '__main__':
     logger = get_logger(__name__, addl_file_loc, save_to_file=False)
     logger.info("Script version is: {}".format(file_manager_args.version))
 
+    fetch_streams_log_file = os.path.join(os.path.split(args.cred_loc)[0], "results", "fetch_streams.txt")
     pub = Publisher(args.db_path)
     directory_list = pub.get_directories_loc(args.recordings_dir, args.camera_no)
-    pub.start_publishing(directory_list, args.cred_loc)
+    pub.start_publishing(directory_list, args.cred_loc, fetch_streams_log_file)
