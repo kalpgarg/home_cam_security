@@ -11,5 +11,5 @@ source $REPO_DIR/home_cam/bin/activate
 OUTPUT_LOG=$REPO_DIR/results/telegram_bot.txt
 LOG_DIR=$REPO_DIR/telegram_bot_log
 python $REPO_DIR/telegram_bot.py -cl $1 -fl $2 -msg $3 -l $LOG_DIR >> $OUTPUT_LOG 2>&1 &
-echo "telegram bot is running in the background!"
+# echo "telegram bot is running in the background!"
 # echo "Output is logged in location: $OUTPUT_LOG"
