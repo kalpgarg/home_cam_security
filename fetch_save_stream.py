@@ -98,6 +98,15 @@ class FetchStream(object):
         cv2.destroyAllWindows()
 
 
+    def reset_ipv4_interface(self, interface="enp7s0"):
+        try:
+            logger.error("Resetting network interface due to OpenCV error...")
+            subprocess.run(["sudo", "/sbin/dhclient", "-4", "-r", interface], check=True)
+            subprocess.run(["sudo", "/sbin/dhclient", "-4", interface], check=True)
+            logger.info("Network reset completed.")
+            time.sleep(5)  # Give time for IP to reacquire
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Network reset failed: {e}")
 
     def display_save_live_stream(self, cams, log_folder, period, cam_no, motion_detection, cred_loc, save_stream=False):
         logger.info("Recording from cam_no: {}".format(cam_no))
@@ -138,6 +147,10 @@ class FetchStream(object):
         
         while True:
             success, current_screen = cams.read()
+            if not success or current_screen is None:
+                logger.error(f"Failed to read from {cam_no=}. Possible network issue ")
+                self.reset_ipv4_interface("enp7s0")
+                time.sleep(5)
             frame = current_screen
             retry_count = 0
             if self.is_time_between(dt.time(6, 00), dt.time(18, 00), datetime.now().time()):
@@ -165,7 +178,13 @@ class FetchStream(object):
                         mask = np.zeros_like(start_frame)
 
                         # Fill the polygon region in the mask with white (255) pixels
+
+                        # try:
                         cv2.fillPoly(mask, [np.array(cropped_vertices)], (255, 255, 255))
+                        # except cv2.error as e:
+                        # logging.error(f"cv2.fillPoly failed: {e}")
+                        # reset_ipv4_interface("enp7s0")
+                        # time.sleep(5)
 
                         # Apply the mask to the image to extract the region of interest
                         start_frame = cv2.bitwise_and(start_frame, mask)
