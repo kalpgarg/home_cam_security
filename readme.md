@@ -34,9 +34,9 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure your environment
-    - Set up DVR stream URLs.
-    - Add your Telegram Bot API key and channel ID.
-    - Use custom_cam_info.json to store your settings securely.
+- Set up DVR stream URLs.
+- Add your Telegram Bot API key and channel ID.
+- Use custom_cam_info.json to store your settings securely.
 
 
 ### 3. Run the main server
@@ -45,10 +45,10 @@ python script_mon.py
 ```
 
 ## 🔐 Security Note
-    - Make sure to secure your DVR access credentials and Telegram bot tokens appropriately.
+- Make sure to secure your DVR access credentials and Telegram bot tokens appropriately.
 
 ## 📬 Contributions
-Contributions are welcome!
-Feel free to fork the repo and submit a pull request for features, bug fixes, or improvements.
+- Contributions are welcome!
+- Feel free to fork the repo and submit a pull request for features, bug fixes, or improvements.
 
 
