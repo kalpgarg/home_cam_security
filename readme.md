@@ -5,7 +5,7 @@ A Python-based local surveillance solution that connects to DVR camera feeds, de
 ## 🚀 Features
 
 - **Implemented in Python**
-  - Built using the power and flexibility of Python.
+  - Built using Python.
 
 - **Multi-Camera Stream Fetching**
   - Runs on a server connected to a DVR.
