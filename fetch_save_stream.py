@@ -149,7 +149,7 @@ class FetchStream(object):
             success, current_screen = cams.read()
             if not success or current_screen is None:
                 logger.error(f"Failed to read from {cam_no=}. Possible network issue ")
-                self.reset_ipv4_interface("enp7s0")
+                # self.reset_ipv4_interface("enp7s0")
                 time.sleep(5)
             frame = current_screen
             retry_count = 0
